@@ -8,20 +8,24 @@ async function main() {
   const hash = (p: string) => bcrypt.hash(p, 10);
 
   const admin = await prisma.user.upsert({
-    where: { matricula: "0001" }, update: {},
+    where: { matricula: "0001" }, 
+    update: { senha: await hash("admin123") },
     create: { matricula: "0001", nome: "Administrador", email: "admin@vpc.com", senha: await hash("admin123"), role: UserRole.ADMINISTRADOR },
   });
   await prisma.user.upsert({
-    where: { matricula: "0002" }, update: {},
+    where: { matricula: "0002" }, 
+    update: { senha: await hash("senha123") },
     create: { matricula: "0002", nome: "Lider de Estoque", email: "lider@vpc.com", senha: await hash("senha123"), role: UserRole.LIDER },
   });
   await prisma.user.upsert({
-    where: { matricula: "116911" }, update: {},
+    where: { matricula: "116911" }, 
+    update: { senha: await hash("116911") },
     create: { matricula: "116911", nome: "Eduardo Adão", email: "eduardo.adao@vpc.com", senha: await hash("116911"), role: UserRole.ESTOQUISTA },
   });
   await prisma.user.upsert({
-    where: { matricula: "116221" }, update: {},
-    create: { matricula: "116221", nome: "Lucas Carvalho", email: "lucas@vpc.com", senha: await hash("16221"), role: UserRole.ADMINISTRADOR },
+    where: { matricula: "116221" }, 
+    update: { senha: await hash("116221") },
+    create: { matricula: "116221", nome: "Lucas Carvalho", email: "lucas@vpc.com", senha: await hash("116221"), role: UserRole.ADMINISTRADOR },
   });
   console.log("✓ Usuarios criados");
 
@@ -31,7 +35,7 @@ async function main() {
   });
   console.log("✓ Fornecedor criado");
 
-  const clienteNomes = ["BARIGUI","FROTA","LOCALIZA","LOCACOES AMERICANAS","MOVIDA","MOVIDA GTF","MOVIDA RAC","MOVIDA ZERO KM","NISSAN","SESE","UNIDAS"];
+  const clienteNomes = ["BARIGUI", "FROTA", "LOCALIZA", "LOCACOES AMERICANAS", "MOVIDA", "MOVIDA GTF", "MOVIDA RAC", "MOVIDA ZERO KM", "NISSAN", "SESE", "UNIDAS"];
   const clienteMap: Record<string, string> = {};
   for (const nome of clienteNomes) {
     const c = await prisma.cliente.upsert({ where: { nome }, update: {}, create: { nome } });

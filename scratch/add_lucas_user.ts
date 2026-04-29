@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  const hash = await bcrypt.hash("16221", 10);
+  const hash = await bcrypt.hash("116221", 10);
   
   const user = await prisma.user.upsert({
     where: { matricula: "116221" },
