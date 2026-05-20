@@ -24,7 +24,28 @@ export async function PATCH(
       return badRequest('Apenas inventários em andamento podem ser sincronizados');
     }
 
-    const currentProductIds = inventory.items.map((i) => i.productId);
+    const currentItems = await prisma.inventoryItem.findMany({
+      where: { inventoryId: id },
+      include: { product: { select: { id: true, quantidade: true } } },
+    });
+
+    let updatedCount = 0;
+    // Atualizar a quantidadeSistema dos itens que já estão no inventário
+    for (const item of currentItems) {
+      if (item.quantidadeSistema !== item.product.quantidade) {
+        await prisma.inventoryItem.update({
+          where: { id: item.id },
+          data: { 
+            quantidadeSistema: item.product.quantidade,
+            // Recalcular a divergência baseada no novo quantidadeSistema se o item já foi conferido
+            divergencia: item.conferido ? item.quantidadeContada - item.product.quantidade : 0
+          },
+        });
+        updatedCount++;
+      }
+    }
+
+    const currentProductIds = currentItems.map((i) => i.productId);
 
     // Buscar produtos ativos que ainda não estão no inventário
     const missingProducts = await prisma.product.findMany({
@@ -35,25 +56,23 @@ export async function PATCH(
       select: { id: true, quantidade: true },
     });
 
-    if (missingProducts.length === 0) {
-      return Response.json({ message: 'A lista já está atualizada', added: 0 });
+    if (missingProducts.length > 0) {
+      // Adicionar os itens faltantes
+      await prisma.inventoryItem.createMany({
+        data: missingProducts.map((p) => ({
+          inventoryId: id,
+          productId: p.id,
+          quantidadeSistema: p.quantidade,
+          quantidadeContada: 0,
+          divergencia: 0,
+          conferido: false,
+        })),
+      });
     }
 
-    // Adicionar os itens faltantes
-    await prisma.inventoryItem.createMany({
-      data: missingProducts.map((p) => ({
-        inventoryId: id,
-        productId: p.id,
-        quantidadeSistema: p.quantidade,
-        quantidadeContada: 0,
-        divergencia: 0,
-        conferido: false,
-      })),
-    });
-
     await registrarLog({
-      action: 'USUARIO_EDITADO', // Usando uma ação genérica ou poderíamos criar uma nova
-      descricao: `Sincronização de inventário: ${missingProducts.length} novos itens adicionados ao inventário ${id}`,
+      action: 'USUARIO_EDITADO',
+      descricao: `Sincronização de inventário ${id}: ${missingProducts.length} novos itens adicionados, ${updatedCount} estoques atualizados.`,
       entidade: 'Inventory',
       entidadeId: id,
       userId: user.id,
