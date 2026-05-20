@@ -8,7 +8,41 @@ import { InventarioModal } from '@/components/modals';
 import { useInventoryAtivo, useInventoryHistorico, useAtualizarItemInventario, useFinalizarInventario, useSyncInventory } from '@/hooks';
 import { reportsService } from '@/services';
 import { formatDateTime, cn } from '@/lib/utils';
-import { CheckSquare, Square, ClipboardCheck, History, FileDown, Calendar, RefreshCw, Activity, ShieldCheck, Clock, Layers } from 'lucide-react';
+import { CheckSquare, Square, ClipboardCheck, History, FileDown, Calendar, RefreshCw, Activity, ShieldCheck, Clock, Layers, ArrowLeft, ArrowRight } from 'lucide-react';
+
+const isDisplayItem = (code: string, name: string) => {
+  const c = code.toUpperCase().trim();
+  const n = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  
+  // Excluir itens avariados (NG) da sessão display
+  if (c.includes("NG") || n.includes(" ng") || n.endsWith("ng")) {
+    return false;
+  }
+
+  if (
+    c.startsWith("BRPRT 11605") || // KIT Chicote Multimidia c/ botao / NG
+    c.startsWith("BRPRT 11604") || // KIT Chicote Multimidia s/ botao / NG
+    c.startsWith("BRPRT 11607") || // Moldura Multimidia c/ botao / NG
+    c.startsWith("BRPRT 11608") || // Moldura Multimidia s/ botao / NG
+    c.startsWith("BRPRT 3110100001") || // Moldura Traseira Kait / NG
+    c.startsWith("BRPRT 11603") || // Multimidia Pionner / NG
+    c.startsWith("BRPRT11609") || // Tampa USB / NG
+    c.startsWith("99098XA0A") || // Adesivo L/D C PILLAR
+    c.startsWith("99096XA0A") || // Adesivo L/D C PILLAR NG
+    c.startsWith("99099XA0A")    // Adesivo L/E C PILLAR / NG
+  ) {
+    return true;
+  }
+  
+  if (n.includes("chicote") && (n.includes("botao") || n.includes("multimidia"))) return true;
+  if (n.includes("moldura multimidia")) return true;
+  if (n.includes("moldura traseira")) return true;
+  if (n.includes("multimidia pionner") || n.includes("multimidia pioneer")) return true;
+  if (n.includes("adesivo") && (n.includes("c pillar") || n.includes("cepila") || n.includes("c-pillar"))) return true;
+  if (n.includes("tampa usb")) return true;
+  
+  return false;
+};
 
 export default function InventarioPage() {
   const [modalOpen, setModalOpen] = useState(false);
@@ -18,6 +52,7 @@ export default function InventarioPage() {
   const finalizar = useFinalizarInventario();
   const sync = useSyncInventory();
 
+  const [currentSection, setCurrentSection] = useState<'display' | 'restante'>('display');
   const [lastSelected, setLastSelected] = useState<Record<string, boolean>>({});
 
   const handleSync = async () => {
@@ -123,6 +158,17 @@ export default function InventarioPage() {
   const conferidos = inventarioAtivo?.items.filter((i) => i.conferido).length ?? 0;
   const total = inventarioAtivo?.items.length ?? 0;
   const pct = total > 0 ? Math.round(((conferidos || 0) / total) * 100) : 0;
+
+  const displayItems = inventarioAtivo?.items.filter((i) => isDisplayItem(i.product.codigo, i.product.nome)) ?? [];
+  const restanteItems = inventarioAtivo?.items.filter((i) => !isDisplayItem(i.product.codigo, i.product.nome)) ?? [];
+
+  const displayConferidos = displayItems.filter((i) => i.conferido).length;
+  const restanteConferidos = restanteItems.filter((i) => i.conferido).length;
+
+  const displayTotal = displayItems.length;
+  const restanteTotal = restanteItems.length;
+
+  const currentItems = currentSection === 'display' ? displayItems : restanteItems;
 
   const getDuration = (start: string | Date, end: string | Date | null) => {
     if (!end) return '-';
@@ -231,110 +277,189 @@ export default function InventarioPage() {
 
             <Card className="group relative overflow-hidden">
               <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-50/20 rounded-full -mr-48 -mt-48 transition-transform duration-1000 group-hover:scale-150" />
-              <CardHeader className="relative z-10">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 w-full">
+              
+              <CardHeader className="relative z-10 border-b border-slate-100 pb-6">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 w-full">
                    <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm border border-indigo-100">
                         <Calendar size={22} strokeWidth={2.5} />
                       </div>
                       <div>
-                        <CardTitle className="text-2xl">Lista de Conferência Dinâmica</CardTitle>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-0.5">Clique para validar a integridade física</p>
+                        <CardTitle className="text-2xl">Lista de Conferência por Etapas</CardTitle>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-0.5">Navegue pelas abas para conferir os produtos</p>
                       </div>
                    </div>
-                   <Badge variant="blue" className="rounded-2xl px-6 py-2.5 bg-indigo-600 text-white border-none shadow-xl transform group-hover:scale-110 transition-transform">{conferidos}/{total} VERIFICADOS</Badge>
+                   <Badge variant="blue" className="rounded-2xl px-6 py-2.5 bg-indigo-600 text-white border-none shadow-xl">
+                     {conferidos} / {total} TOTAL VERIFICADO
+                   </Badge>
                 </div>
-              </CardHeader>
-              <div className="relative z-10 grid grid-cols-1 gap-4 p-4 md:p-8">
-                {[...inventarioAtivo.items]
-                  .sort((a, b) => {
-                    if (a.conferido && !b.conferido) return -1;
-                    if (!a.conferido && b.conferido) return 1;
-                    return a.product.nome.localeCompare(b.product.nome);
-                  })
-                  .map((item) => (
-                    <div
-                    key={item.id}
+
+                {/* Abas Premium */}
+                <div className="flex flex-col sm:flex-row gap-3 mt-6 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
+                  <button
+                    onClick={() => setCurrentSection('display')}
                     className={cn(
-                      "group/item flex flex-col lg:flex-row lg:items-center gap-8 p-5 lg:p-6 rounded-2xl md:rounded-[2.5rem] transition-all duration-500 border-2",
-                      item.conferido 
-                        ? 'bg-indigo-50/50 border-indigo-200/50 shadow-inner' 
-                        : 'bg-white border-slate-100 hover:border-indigo-200 hover:shadow-2xl hover:shadow-indigo-100/50'
+                      "flex-1 flex items-center justify-center gap-3 py-3 px-5 rounded-xl font-black uppercase text-xs tracking-wider transition-all duration-300",
+                      currentSection === 'display'
+                        ? "bg-white text-indigo-600 shadow-md border border-slate-100"
+                        : "text-slate-400 hover:text-slate-600 hover:bg-slate-100/50"
                     )}
                   >
-                    <div className="flex items-center gap-4 lg:gap-6">
-                      <button
-                        onClick={() => handleToggleItem(item.id, !item.conferido, item.quantidadeSistema)}
+                    <Layers size={16} />
+                    Controle de Estoque Display
+                    <Badge variant={currentSection === 'display' ? "blue" : "gray"} className="ml-1 px-2.5 py-0.5 rounded-full font-black text-[10px]">
+                      {displayConferidos}/{displayTotal}
+                    </Badge>
+                  </button>
+
+                  <button
+                    onClick={() => setCurrentSection('restante')}
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-3 py-3 px-5 rounded-xl font-black uppercase text-xs tracking-wider transition-all duration-300",
+                      currentSection === 'restante'
+                        ? "bg-white text-indigo-600 shadow-md border border-slate-100"
+                        : "text-slate-400 hover:text-slate-600 hover:bg-slate-100/50"
+                    )}
+                  >
+                    <ClipboardCheck size={16} />
+                    Restante do Estoque
+                    <Badge variant={currentSection === 'restante' ? "blue" : "gray"} className="ml-1 px-2.5 py-0.5 rounded-full font-black text-[10px]">
+                      {restanteConferidos}/{restanteTotal}
+                    </Badge>
+                  </button>
+                </div>
+              </CardHeader>
+
+              <div className="relative z-10 grid grid-cols-1 gap-4 p-4 md:p-8 border-b border-slate-100">
+                {currentItems.length === 0 ? (
+                  <div className="py-16 text-center">
+                    <p className="text-slate-400 font-bold italic">Nenhum item nesta sessão.</p>
+                  </div>
+                ) : (
+                  [...currentItems]
+                    .sort((a, b) => {
+                      if (a.conferido && !b.conferido) return -1;
+                      if (!a.conferido && b.conferido) return 1;
+                      return a.product.nome.localeCompare(b.product.nome);
+                    })
+                    .map((item) => (
+                      <div
+                        key={item.id}
                         className={cn(
-                          "w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center transition-all duration-500 border-2 shrink-0",
+                          "group/item flex flex-col lg:flex-row lg:items-center gap-8 p-5 lg:p-6 rounded-2xl md:rounded-[2.5rem] transition-all duration-500 border-2",
                           item.conferido 
-                            ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl shadow-indigo-200 rotate-[360deg] scale-110' 
-                            : 'border-slate-200 text-transparent hover:border-indigo-500 bg-white hover:rotate-12'
+                            ? 'bg-indigo-50/50 border-indigo-200/50 shadow-inner' 
+                            : 'bg-white border-slate-100 hover:border-indigo-200 hover:shadow-2xl hover:shadow-indigo-100/50'
                         )}
                       >
-                        <CheckSquare strokeWidth={3} className={cn("transition-all duration-700 w-5 h-5 md:w-6 md:h-6", item.conferido ? 'scale-100' : 'scale-0')} />
-                      </button>
-                      <div className="min-w-0 relative">
-                        <p className={cn("text-lg md:text-xl font-black transition-all truncate tracking-tight mb-1", item.conferido ? 'text-indigo-900' : 'text-slate-900')}>
-                          {item.product.nome}
-                        </p>
-                        <div className="flex items-center gap-3">
-                           <span className={cn("text-[10px] font-black tracking-[0.2em] uppercase font-mono-custom", item.conferido ? 'text-indigo-500' : 'text-slate-400')}>
-                             {item.product.codigo}
-                           </span>
-                           {item.conferido && <Badge variant="green" className="py-0 px-2 text-[8px] border-emerald-300">VALIDADO</Badge>}
+                        <div className="flex items-center gap-4 lg:gap-6">
+                          <button
+                            onClick={() => handleToggleItem(item.id, !item.conferido, item.quantidadeSistema)}
+                            className={cn(
+                              "w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center transition-all duration-500 border-2 shrink-0",
+                              item.conferido 
+                                ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl shadow-indigo-200 rotate-[360deg] scale-110' 
+                                : 'border-slate-200 text-transparent hover:border-indigo-500 bg-white hover:rotate-12'
+                            )}
+                          >
+                            <CheckSquare strokeWidth={3} className={cn("transition-all duration-700 w-5 h-5 md:w-6 md:h-6", item.conferido ? 'scale-100' : 'scale-0')} />
+                          </button>
+                          <div className="min-w-0 relative">
+                            <p className={cn("text-lg md:text-xl font-black transition-all truncate tracking-tight mb-1", item.conferido ? 'text-indigo-900' : 'text-slate-900')}>
+                              {item.product.nome}
+                            </p>
+                            <div className="flex items-center gap-3">
+                               <span className={cn("text-[10px] font-black tracking-[0.2em] uppercase font-mono-custom", item.conferido ? 'text-indigo-500' : 'text-slate-400')}>
+                                 {item.product.codigo}
+                               </span>
+                               {item.conferido && <Badge variant="green" className="py-0 px-2 text-[8px] border-emerald-300">VALIDADO</Badge>}
+                            </div>
+
+                            {lastSelected[item.id] && (
+                              <span className="absolute left-0 -top-8 bg-indigo-600 text-white text-[10px] font-black px-4 py-1.5 rounded-full animate-bounce shadow-2xl z-50">
+                                REGISTRADO!
+                              </span>
+                            )}
+                          </div>
                         </div>
 
-                        {lastSelected[item.id] && (
-                          <span className="absolute left-0 -top-8 bg-indigo-600 text-white text-[10px] font-black px-4 py-1.5 rounded-full animate-bounce shadow-2xl z-50">
-                            REGISTRADO!
-                          </span>
-                        )}
+                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 items-center gap-4 md:gap-6">
+                           <div className="flex flex-col gap-2">
+                              <label className="text-[10px] uppercase font-black text-slate-400 tracking-widest ml-1">Contagem Real</label>
+                              <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border-2 border-slate-100 group-focus-within/item:border-indigo-500 transition-colors shadow-sm">
+                                 <input
+                                   type="number"
+                                   min="0"
+                                   defaultValue={item.quantidadeContada}
+                                   onBlur={(e) => handleUpdateQuantity(item.id, e.target.value)}
+                                   className="w-full h-10 bg-transparent text-center text-lg font-black font-mono-custom outline-none text-slate-800"
+                                 />
+                                 <Badge variant="glass" className="font-bold shrink-0">{item.product.unidade}</Badge>
+                              </div>
+                           </div>
+
+                           <div className="flex flex-col gap-2">
+                              <label className="text-[10px] uppercase font-black text-slate-400 tracking-widest ml-1">Notas / Observações</label>
+                              <input
+                                type="text"
+                                placeholder="Adicionar nota fiscal ou observação..."
+                                defaultValue={item.observacao ?? ''}
+                                onBlur={(e) => handleUpdateObservacao(item.id, e.target.value)}
+                                className="w-full h-14 px-5 rounded-2xl border-2 border-slate-100 bg-white text-sm font-semibold outline-none focus:border-indigo-500 transition-all placeholder:text-slate-300"
+                              />
+                           </div>
+
+                           <div className="flex flex-col items-center justify-center p-4 bg-slate-50/50 rounded-2xl border border-slate-100 shadow-inner">
+                              <label className="text-[9px] uppercase font-black text-slate-400 tracking-widest mb-2 whitespace-nowrap">Status Delta</label>
+                              {item.conferido ? (
+                                <div className={cn(
+                                  "text-2xl font-black font-mono-custom underline decoration-4 underline-offset-4",
+                                  item.divergencia < 0 ? 'text-rose-600 decoration-rose-200' : item.divergencia > 0 ? 'text-amber-600 decoration-amber-200' : 'text-emerald-600 decoration-emerald-200'
+                                )}>
+                                  {item.divergencia === 0 ? 'OK' : `${item.divergencia > 0 ? '+' : ''}${item.divergencia}`}
+                                </div>
+                              ) : (
+                                <span className="text-[10px] font-bold text-slate-300 italic">Pendente</span>
+                              )}
+                           </div>
+                        </div>
                       </div>
-                    </div>
+                    ))
+                )}
+              </div>
 
-                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 items-center gap-4 md:gap-6">
-                       <div className="flex flex-col gap-2">
-                          <label className="text-[10px] uppercase font-black text-slate-400 tracking-widest ml-1">Contagem Real</label>
-                          <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border-2 border-slate-100 group-focus-within/item:border-indigo-500 transition-colors shadow-sm">
-                             <input
-                               type="number"
-                               min="0"
-                               defaultValue={item.quantidadeContada}
-                               onBlur={(e) => handleUpdateQuantity(item.id, e.target.value)}
-                               className="w-full h-10 bg-transparent text-center text-lg font-black font-mono-custom outline-none text-slate-800"
-                             />
-                             <Badge variant="glass" className="font-bold shrink-0">{item.product.unidade}</Badge>
-                          </div>
-                       </div>
-
-                       <div className="flex flex-col gap-2">
-                          <label className="text-[10px] uppercase font-black text-slate-400 tracking-widest ml-1">Notas / Observações</label>
-                          <input
-                            type="text"
-                            placeholder="Adicionar nota fiscal ou observação..."
-                            defaultValue={item.observacao ?? ''}
-                            onBlur={(e) => handleUpdateObservacao(item.id, e.target.value)}
-                            className="w-full h-14 px-5 rounded-2xl border-2 border-slate-100 bg-white text-sm font-semibold outline-none focus:border-indigo-500 transition-all placeholder:text-slate-300"
-                          />
-                       </div>
-
-                       <div className="flex flex-col items-center justify-center p-4 bg-slate-50/50 rounded-2xl border border-slate-100 shadow-inner">
-                          <label className="text-[9px] uppercase font-black text-slate-400 tracking-widest mb-2 whitespace-nowrap">Status Delta</label>
-                          {item.conferido ? (
-                            <div className={cn(
-                              "text-2xl font-black font-mono-custom underline decoration-4 underline-offset-4",
-                              item.divergencia < 0 ? 'text-rose-600 decoration-rose-200' : item.divergencia > 0 ? 'text-amber-600 decoration-amber-200' : 'text-emerald-600 decoration-emerald-200'
-                            )}>
-                              {item.divergencia === 0 ? 'OK' : `${item.divergencia > 0 ? '+' : ''}${item.divergencia}`}
-                            </div>
-                          ) : (
-                            <span className="text-[10px] font-bold text-slate-300 italic">Pendente</span>
-                          )}
-                       </div>
-                    </div>
-                  </div>
-                ))}
+              {/* Rodapé Dinâmico com Ações */}
+              <div className="relative z-10 bg-slate-50/50 p-6 md:p-8 rounded-b-[2rem] flex flex-col sm:flex-row justify-between items-center gap-4">
+                {currentSection === 'display' ? (
+                  <>
+                    <p className="text-xs font-bold text-slate-400 italic">
+                      💡 Os dados de contagem são salvos automaticamente. Avance para o restante do estoque ao concluir.
+                    </p>
+                    <Button
+                      variant="premium"
+                      onClick={() => {
+                        setCurrentSection('restante');
+                        toast.success("Sessão 'Display' salva! Avançando para o restante do estoque.");
+                      }}
+                      className="w-full sm:w-auto h-12 bg-indigo-600 text-white font-black uppercase text-xs tracking-widest px-8 shadow-xl animate-bounce"
+                    >
+                      Avançar para Restante <ArrowRight size={16} className="ml-2" />
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant="secondary"
+                      onClick={() => setCurrentSection('display')}
+                      className="w-full sm:w-auto h-12 bg-white text-slate-700 border-slate-200 hover:bg-slate-50 font-black uppercase text-xs tracking-widest px-8"
+                    >
+                      <ArrowLeft size={16} className="mr-2" /> Voltar para Display
+                    </Button>
+                    <p className="text-xs font-bold text-slate-400 italic hidden md:block">
+                      Dica: Você pode retornar à aba Display a qualquer momento antes de encerrar o ciclo.
+                    </p>
+                  </>
+                )}
               </div>
             </Card>
           </div>
