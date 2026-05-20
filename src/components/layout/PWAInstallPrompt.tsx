@@ -59,9 +59,31 @@ export function PWAInstallPrompt() {
 
   if (!showPrompt && !isIOS) return null;
   
-  // Se for iOS, podemos mostrar uma instrução de como adicionar à tela de início manualmente
-  // Mas para esta tarefa, vamos focar no prompt automático conforme solicitado.
-  if (isIOS) return null; 
+  if (isIOS && !showPrompt && !window.matchMedia('(display-mode: standalone)').matches) {
+    return (
+      <Modal 
+        open={true} 
+        onClose={() => setIsIOS(false)} 
+        title="Instalar no iPhone / iPad"
+        width="max-w-sm"
+      >
+        <ModalBody className="flex flex-col items-center text-center gap-6 py-8">
+          <div className="w-24 h-24 rounded-[2rem] bg-indigo-600 shadow-2xl shadow-indigo-500/20 flex items-center justify-center border-4 border-white overflow-hidden">
+            <img src="/icons/icon-512x512.png" alt="StockPRO Logo" className="w-full h-full object-cover" />
+          </div>
+          <div className="space-y-3">
+            <h3 className="text-xl font-black text-slate-900 tracking-tight">Adicionar à Tela de Início</h3>
+            <p className="text-sm text-slate-500 font-medium px-4 leading-relaxed">
+              Para instalar o aplicativo no iOS, toque no botão de <Share size={16} className="inline mb-1" /> Compartilhar no menu inferior e depois selecione <strong className="text-slate-700">"Adicionar à Tela de Início"</strong>.
+            </p>
+          </div>
+        </ModalBody>
+        <ModalFooter className="flex justify-center bg-white p-6 border-t-0">
+          <Button variant="secondary" onClick={() => setIsIOS(false)} className="w-full h-12 rounded-2xl font-bold">Entendi</Button>
+        </ModalFooter>
+      </Modal>
+    );
+  }
 
   return (
     <Modal 
