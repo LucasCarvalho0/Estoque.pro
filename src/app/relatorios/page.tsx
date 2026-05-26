@@ -50,6 +50,11 @@ export default function RelatoriosPage() {
       label: 'Posição de Estoque', desc: 'Snapshot atual do estoque com status e alertas destacados',
       action: () => handle('est-xlsx', reportsService.excelEstoque, 'posicao-estoque.xlsx'),
     },
+    {
+      key: 'nissan-xlsx', icon: <Table size={18} className="text-blue-700" />, bg: '#eff6ff',
+      label: 'Planilha Padrão Nissan', desc: 'Relação de estoque no formato padronizado Nissan',
+      action: () => handle('nissan-xlsx', reportsService.excelEstoqueNissan, 'planilha-nissan.xlsx'),
+    },
   ];
 
   const labelStyle = 'text-[11px] font-medium text-slate-400 uppercase tracking-wider font-mono-custom';
