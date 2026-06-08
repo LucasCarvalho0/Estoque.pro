@@ -24,37 +24,43 @@ export default function RelatoriosPage() {
     finally { setLoading(null); }
   };
 
-  const pdfReports = [
+  const generalReports = [
     {
-      key: 'inv-pdf', icon: <FileText size={18} className="text-red-600" />, bg: '#fef2f2',
-      label: 'Relatório de Inventário', desc: 'Inventário completo com responsável, data/hora e divergências (A4)',
-      action: () => historico[0]
-        ? handle('inv-pdf', () => reportsService.pdfInventario(historico[0].id), `inventario-${historico[0].id}.pdf`)
-        : alert('Nenhum inventário concluído encontrado'),
+      key: 'movimentacoes', icon: <FileText size={20} className="text-blue-600" />, bg: '#eff6ff',
+      label: 'Relatório de Movimentações', desc: 'Entradas e saídas com rastreabilidade completa por período.',
+      actions: [
+        { key: 'mov-pdf', label: 'Exportar PDF', icon: <Download size={14} />, variant: 'danger' as any, onClick: () => handle('mov-pdf', () => reportsService.pdfMovimentos(startDate, endDate), `movimentacoes-${startDate}-${endDate}.pdf`) },
+        { key: 'mov-xlsx', label: 'Exportar Excel', icon: <Download size={14} />, variant: 'success' as any, onClick: () => handle('mov-xlsx', () => reportsService.excelMovimentacao({ startDate, endDate }), `movimentacoes-${startDate}-${endDate}.xlsx`) },
+      ]
     },
     {
-      key: 'mov-pdf', icon: <FileText size={18} className="text-red-600" />, bg: '#fef2f2',
-      label: 'Relatório de Movimentações', desc: 'Entradas e saídas com rastreabilidade completa por período (A4)',
-      action: () => handle('mov-pdf', () => reportsService.pdfMovimentos(startDate, endDate), `movimentacoes-${startDate}-${endDate}.pdf`),
-    },
-  ];
-
-  const excelReports = [
-    {
-      key: 'inv-xlsx', icon: <Table size={18} className="text-green-700" />, bg: '#f0fdf4',
-      label: 'Inventários Semanais', desc: 'Todos os inventários em planilha consolidada com aba por semana',
-      action: () => handle('inv-xlsx', reportsService.excelInventarios, 'inventarios-semanais.xlsx'),
+      key: 'estoque', icon: <Table size={20} className="text-emerald-600" />, bg: '#ecfdf5',
+      label: 'Relatório de Estoque', desc: 'Snapshot atual do estoque com status e alertas destacados.',
+      actions: [
+        { key: 'est-xlsx', label: 'Exportar Excel', icon: <Download size={14} />, variant: 'success' as any, onClick: () => handle('est-xlsx', reportsService.excelEstoque, 'posicao-estoque.xlsx') },
+      ]
     },
     {
-      key: 'est-xlsx', icon: <Table size={18} className="text-green-700" />, bg: '#f0fdf4',
-      label: 'Posição de Estoque', desc: 'Snapshot atual do estoque com status e alertas destacados',
-      action: () => handle('est-xlsx', reportsService.excelEstoque, 'posicao-estoque.xlsx'),
+      key: 'nissan', icon: <Table size={20} className="text-blue-700" />, bg: '#eff6ff',
+      label: 'Planilha Padrão Nissan', desc: 'Relação de estoque no formato padronizado Nissan.',
+      actions: [
+        { key: 'nissan-xlsx', label: 'Exportar Excel', icon: <Download size={14} />, variant: 'success' as any, onClick: () => handle('nissan-xlsx', reportsService.excelEstoqueNissan, 'planilha-nissan.xlsx') },
+      ]
     },
     {
-      key: 'nissan-xlsx', icon: <Table size={18} className="text-blue-700" />, bg: '#eff6ff',
-      label: 'Planilha Padrão Nissan', desc: 'Relação de estoque no formato padronizado Nissan',
-      action: () => handle('nissan-xlsx', reportsService.excelEstoqueNissan, 'planilha-nissan.xlsx'),
+      key: 'inv-semanais', icon: <Table size={20} className="text-teal-600" />, bg: '#f0fdfa',
+      label: 'Inventários Semanais', desc: 'Todos os inventários em planilha consolidada com aba por semana.',
+      actions: [
+        { key: 'inv-xlsx', label: 'Exportar Excel', icon: <Download size={14} />, variant: 'success' as any, onClick: () => handle('inv-xlsx', reportsService.excelInventarios, 'inventarios-semanais.xlsx') },
+      ]
     },
+    {
+      key: 'inv-atual', icon: <FileText size={20} className="text-red-500" />, bg: '#fef2f2',
+      label: 'Último Inventário', desc: 'Inventário completo com responsável, data/hora e divergências.',
+      actions: [
+        { key: 'inv-pdf', label: 'Exportar PDF', icon: <Download size={14} />, variant: 'danger' as any, onClick: () => historico[0] ? handle('inv-pdf', () => reportsService.pdfInventario(historico[0].id), `inventario-${historico[0].id}.pdf`) : alert('Nenhum inventário concluído encontrado') },
+      ]
+    }
   ];
 
   const labelStyle = 'text-[11px] font-medium text-slate-400 uppercase tracking-wider font-mono-custom';
@@ -81,48 +87,27 @@ export default function RelatoriosPage() {
           </div>
         </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* PDF */}
-          <Card>
-            <CardHeader><CardTitle>Relatórios em PDF</CardTitle><Badge variant="red">Formato A4</Badge></CardHeader>
-            <div className="divide-y divide-slate-50">
-              {pdfReports.map((r) => (
-                <div key={r.key} className="flex items-center gap-4 px-5 py-4">
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: r.bg }}>
-                    {r.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-medium text-slate-800">{r.label}</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">{r.desc}</p>
-                  </div>
-                  <Button size="sm" variant="danger" onClick={r.action} loading={loading === r.key}>
-                    {loading !== r.key && <Download size={12} />} PDF
-                  </Button>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {generalReports.map((report) => (
+            <Card key={report.key} className="flex flex-col">
+              <div className="p-5 flex items-start gap-4 flex-1">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: report.bg }}>
+                  {report.icon}
                 </div>
-              ))}
-            </div>
-          </Card>
-
-          {/* Excel */}
-          <Card>
-            <CardHeader><CardTitle>Exportações Excel</CardTitle><Badge variant="green">XLSX</Badge></CardHeader>
-            <div className="divide-y divide-slate-50">
-              {excelReports.map((r) => (
-                <div key={r.key} className="flex items-center gap-4 px-5 py-4">
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: r.bg }}>
-                    {r.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-medium text-slate-800">{r.label}</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">{r.desc}</p>
-                  </div>
-                  <Button size="sm" variant="success" onClick={r.action} loading={loading === r.key}>
-                    {loading !== r.key && <Download size={12} />} Excel
-                  </Button>
+                <div>
+                  <h3 className="text-[14px] font-bold text-slate-800">{report.label}</h3>
+                  <p className="text-[12px] text-slate-500 mt-1 leading-relaxed">{report.desc}</p>
                 </div>
-              ))}
-            </div>
-          </Card>
+              </div>
+              <div className="p-5 border-t border-slate-100 flex gap-2 bg-slate-50/50 rounded-b-2xl">
+                {report.actions.map((act) => (
+                  <Button key={act.key} size="sm" variant={act.variant} onClick={act.onClick} loading={loading === act.key} className="flex-1 shadow-sm">
+                    {loading !== act.key && <span className="mr-1.5">{act.icon}</span>} {act.label}
+                  </Button>
+                ))}
+              </div>
+            </Card>
+          ))}
         </div>
 
         {/* Exportação individual por inventário */}

@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
     // ========== ABA: EntradaSaida ==========
     const sheetES = workbook.addWorksheet('EntradaSaida');
 
-    sheetES.mergeCells('A1:H1');
+    sheetES.mergeCells('A1:J1');
     const titleES = sheetES.getCell('A1');
     titleES.value = 'STOCKPRO — RELATÓRIO DE MOVIMENTAÇÃO';
     titleES.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
@@ -62,7 +62,9 @@ export async function GET(req: NextRequest) {
       { header: 'QUANTIDADE', key: 'quantidade', width: 15 },
       { header: 'MODELO', key: 'modelo', width: 18 },
       { header: 'CLIENTE', key: 'cliente', width: 30 },
-      { header: 'NG', key: 'ng', width: 10 },
+      { header: 'NG', key: 'ng', width: 15 },
+      { header: 'RESPONSÁVEL', key: 'responsavel', width: 25 },
+      { header: 'OBSERVAÇÃO', key: 'observacao', width: 35 },
     ];
 
     // Header row styling (row 2)
@@ -91,6 +93,8 @@ export async function GET(req: NextRequest) {
         modelo: m.product?.modelo || '-',
         cliente: m.product?.cliente?.nome || '-',
         ng: m.notaFiscal || '-',
+        responsavel: m.user ? `${m.user.nome} (${m.user.matricula})` : '-',
+        observacao: m.observacao || '-',
       });
 
       row.eachCell((cell) => {
@@ -165,7 +169,7 @@ export async function GET(req: NextRequest) {
     sheetES.addRow([]);
     const footerES = sheetES.addRow([`Relatório gerado em ${now.toLocaleString('pt-BR')} — StockPRO Gestão de Ativos`]);
     footerES.font = { italic: true, size: 8, color: { argb: 'FF64748B' } };
-    sheetES.mergeCells(footerES.number, 1, footerES.number, 8);
+    sheetES.mergeCells(footerES.number, 1, footerES.number, 10);
 
     sheetMov.addRow([]);
     const footerMov = sheetMov.addRow([`Relatório gerado em ${now.toLocaleString('pt-BR')} — StockPRO Gestão de Ativos`]);

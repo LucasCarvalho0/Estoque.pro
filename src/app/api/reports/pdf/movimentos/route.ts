@@ -66,9 +66,9 @@ export async function GET(req: NextRequest) {
       drawLine(doc.y);
       doc.moveDown(0.5);
 
-      const colWidths = [45, 160, 60, 65, 110, 75];
-      const colOffsets = [40, 85, 245, 305, 370, 480];
-      const headers = ['Operação', 'Produto', 'Volume', 'Doc. Ref', 'Responsável', 'Timestamp'];
+      const colWidths = [45, 50, 110, 60, 65, 110, 75];
+      const colOffsets = [40, 85, 135, 245, 305, 370, 480];
+      const headers = ['Operação', 'Código', 'Produto', 'Volume', 'Doc. Ref', 'Responsável', 'Timestamp'];
       
       let y = doc.y;
 
@@ -87,8 +87,8 @@ export async function GET(req: NextRequest) {
       doc.font('Helvetica').fontSize(8);
       for (const mov of movements) {
         const textHeights = [
-          doc.heightOfString(mov.product.nome, { width: colWidths[1] }),
-          doc.heightOfString(`${mov.user.nome} (${mov.user.matricula})`, { width: colWidths[4] })
+          doc.heightOfString(mov.product.nome, { width: colWidths[2] }),
+          doc.heightOfString(`${mov.user.nome} (${mov.user.matricula})`, { width: colWidths[5] })
         ];
         const rowHeight = Math.max(...textHeights, 14) + 6;
 
@@ -102,18 +102,21 @@ export async function GET(req: NextRequest) {
         doc.fillColor(mov.type === 'ENTRADA' ? colors.success : colors.danger)
           .font('Helvetica-Bold').text(mov.type, colOffsets[0], y, { width: colWidths[0] });
         
+        doc.fillColor(colors.neutral).font('Helvetica-Bold')
+          .text(mov.product.codigo, colOffsets[1], y, { width: colWidths[1] });
+
         doc.fillColor(colors.primary).font('Helvetica')
-          .text(mov.product.nome, colOffsets[1], y, { width: colWidths[1] });
+          .text(mov.product.nome, colOffsets[2], y, { width: colWidths[2] });
         
         doc.font('Helvetica-Bold')
-          .text(`${mov.type === 'ENTRADA' ? '+' : '-'}${mov.quantidade} ${mov.product.unidade}`, colOffsets[2], y, { width: colWidths[2] });
+          .text(`${mov.type === 'ENTRADA' ? '+' : '-'}${mov.quantidade} ${mov.product.unidade}`, colOffsets[3], y, { width: colWidths[3] });
         
         doc.font('Helvetica')
-          .text(mov.notaFiscal ?? 'S/ REG', colOffsets[3], y, { width: colWidths[3] });
+          .text(mov.notaFiscal ?? 'S/ REG', colOffsets[4], y, { width: colWidths[4] });
         
-        doc.text(`${mov.user.nome} (${mov.user.matricula})`, colOffsets[4], y, { width: colWidths[4] });
+        doc.text(`${mov.user.nome} (${mov.user.matricula})`, colOffsets[5], y, { width: colWidths[5] });
         
-        doc.text(new Date(mov.createdAt).toLocaleString('pt-BR'), colOffsets[5], y, { width: colWidths[5] });
+        doc.text(new Date(mov.createdAt).toLocaleString('pt-BR'), colOffsets[6], y, { width: colWidths[6] });
         
         y += rowHeight;
         drawLine(y - 3);
