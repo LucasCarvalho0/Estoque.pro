@@ -15,9 +15,9 @@ async function main() {
 
   if (!latestInventory) return;
 
-  const loc09 = latestInventory.items.find(i => i.product.codigo === 'LOC09');
-  const trava = latestInventory.items.find(i => i.product.codigo === 'BRPRT 11354');
-  const b11605 = latestInventory.items.find(i => i.product.codigo === 'BRPRT 11605');
+  const loc09 = latestInventory.items.find((i: any) => i.product.codigo === 'LOC09');
+  const trava = latestInventory.items.find((i: any) => i.product.codigo === 'BRPRT 11354');
+  const b11605 = latestInventory.items.find((i: any) => i.product.codigo === 'BRPRT 11605');
 
   console.log('LOC09 conferido?', loc09?.conferido, 'Contada:', loc09?.quantidadeContada, 'Sistema:', loc09?.quantidadeSistema);
   console.log('Trava conferido?', trava?.conferido, 'Contada:', trava?.quantidadeContada, 'Sistema:', trava?.quantidadeSistema);

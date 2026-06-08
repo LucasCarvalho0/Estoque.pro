@@ -14,6 +14,7 @@ const navItems = [
   { href: '/estoque', label: 'Estoque', icon: Lucide.Package, section: 'principal' },
   { href: '/alertas', label: 'Alertas', icon: Lucide.AlertTriangle, section: 'principal', badge: true },
   { href: '/nf', label: 'NF de Clientes', icon: Lucide.FileDown, section: 'operacoes' },
+  { href: '/movimentacao', label: 'Movimentação', icon: Lucide.ArrowLeftRight, section: 'operacoes' },
   { href: '/inventario', label: 'Inventário', icon: Lucide.ClipboardList, section: 'operacoes' },
   { href: '/relatorios', label: 'Relatórios', icon: Lucide.FileText, section: 'operacoes' },
   { href: '/auditoria', label: 'Auditoria', icon: Lucide.ScrollText, section: 'operacoes' },

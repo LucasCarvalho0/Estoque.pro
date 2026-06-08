@@ -15,15 +15,17 @@ export async function GET(req: NextRequest) {
     const type = searchParams.get('type') ?? undefined;
     const startDate = searchParams.get('startDate') ?? undefined;
     const endDate = searchParams.get('endDate') ?? undefined;
+    const clienteId = searchParams.get('clienteId') ?? undefined;
 
     const movements = await prisma.movement.findMany({
       where: {
         ...(productId && { productId }),
         ...(type && { type: type as any }),
         ...(startDate && endDate && { createdAt: { gte: new Date(startDate), lte: new Date(endDate) } }),
+        ...(clienteId && { product: { clienteId } }),
       },
       include: {
-        product: { select: { id: true, codigo: true, nome: true, unidade: true } },
+        product: { select: { id: true, codigo: true, nome: true, modelo: true, unidade: true, cliente: { select: { id: true, nome: true } } } },
         user: { select: { id: true, nome: true, matricula: true } },
       },
       orderBy: { createdAt: 'desc' },
