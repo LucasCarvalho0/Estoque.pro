@@ -45,9 +45,15 @@ export async function GET(req: NextRequest) {
         diverg: inv.items.filter((i) => i.divergencia !== 0).length,
       });
 
-      // Aba por inventário
+      // Aba por inventário — desambiguar nomes duplicados (mesmo dia)
       const label = new Date(inv.iniciadoEm).toLocaleDateString('pt-BR').replace(/\//g, '-');
-      const sheet = workbook.addWorksheet(`Inv ${label}`);
+      let sheetName = `Inv ${label}`;
+      let suffix = 2;
+      while (workbook.getWorksheet(sheetName)) {
+        sheetName = `Inv ${label} (${suffix})`;
+        suffix++;
+      }
+      const sheet = workbook.addWorksheet(sheetName);
       sheet.columns = [
         { header: 'Código', key: 'codigo', width: 12 },
         { header: 'Produto', key: 'produto', width: 30 },
