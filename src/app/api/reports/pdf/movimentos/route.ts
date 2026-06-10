@@ -10,11 +10,15 @@ export async function GET(req: NextRequest) {
     const user = await getAuthUser(req);
     if (!user) return unauthorized();
 
-    const startDate = req.nextUrl.searchParams.get('startDate') ?? new Date(new Date().setDate(1)).toISOString();
-    const endDate = req.nextUrl.searchParams.get('endDate') ?? new Date().toISOString();
+    const { searchParams } = new URL(req.url);
+    const startDateStr = searchParams.get('startDate');
+    const endDateStr = searchParams.get('endDate');
+
+    const gte = startDateStr ? new Date(`${startDateStr}T00:00:00.000Z`) : new Date(new Date().setDate(1));
+    const lte = endDateStr ? new Date(`${endDateStr}T23:59:59.999Z`) : new Date();
 
     const movements = await prisma.movement.findMany({
-      where: { createdAt: { gte: new Date(startDate), lte: new Date(endDate) } },
+      where: { createdAt: { gte, lte } },
       include: {
         product: { select: { codigo: true, nome: true, unidade: true } },
         user: { select: { nome: true, matricula: true } },
@@ -59,7 +63,7 @@ export async function GET(req: NextRequest) {
       doc.fontSize(16).font('Helvetica-Bold').fillColor(colors.primary).text('StockPRO — Relatório de Movimentações', { align: 'center' });
       doc.moveDown(0.5);
       doc.fontSize(9).font('Helvetica').fillColor(colors.neutral)
-        .text(`Período analisado: ${new Date(startDate).toLocaleDateString('pt-BR')} a ${new Date(endDate).toLocaleDateString('pt-BR')}`, { align: 'center' })
+        .text(`Período analisado: ${gte.toLocaleDateString('pt-BR')} a ${lte.toLocaleDateString('pt-BR')}`, { align: 'center' })
         .text(`Total de registros: ${movements.length}`, { align: 'center' });
       
       doc.moveDown(1.5);

@@ -4,29 +4,43 @@ import { prisma } from '@/lib/prisma';
 import { getAuthUser, unauthorized, serverError } from '@/lib/auth';
 import ExcelJS from 'exceljs';
 
+// Azul idêntico ao da imagem (cabeçalho da planilha)
+const BLUE_HEADER = 'FF1565C0';   // azul vivo
+const WHITE_TEXT  = 'FFFFFFFF';
+const BORDER_COLOR = 'FFBDBDBD'; // cinza claro para bordas internas
+
 export async function GET(req: NextRequest) {
   headers();
   try {
     const user = await getAuthUser(req);
     if (!user) return unauthorized();
 
-    const { searchParams } = req.nextUrl;
-    const type = searchParams.get('type') ?? undefined;
-    const startDate = searchParams.get('startDate') ?? undefined;
-    const endDate = searchParams.get('endDate') ?? undefined;
-    const clienteId = searchParams.get('clienteId') ?? undefined;
+    const { searchParams } = new URL(req.url);
+    const type        = searchParams.get('type')      ?? undefined;
+    const startDateStr = searchParams.get('startDate') ?? undefined;
+    const endDateStr   = searchParams.get('endDate')   ?? undefined;
+    const clienteId   = searchParams.get('clienteId') ?? undefined;
+
+    let dateFilter: any = {};
+    if (startDateStr && endDateStr) {
+      dateFilter = {
+        createdAt: {
+          gte: new Date(`${startDateStr}T00:00:00.000Z`),
+          lte: new Date(`${endDateStr}T23:59:59.999Z`),
+        },
+      };
+    }
 
     const movements = await prisma.movement.findMany({
       where: {
-        ...(type && { type: type as any }),
-        ...(startDate && endDate && { createdAt: { gte: new Date(startDate), lte: new Date(endDate) } }),
+        ...(type      && { type: type as any }),
+        ...dateFilter,
         ...(clienteId && { product: { clienteId } }),
       },
       include: {
         product: {
           select: {
-            id: true, codigo: true, nome: true, modelo: true, unidade: true,
-            quantidadeNG: true,
+            codigo: true, nome: true, modelo: true,
             cliente: { select: { nome: true } },
           },
         },
@@ -35,146 +49,104 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: 'asc' },
     });
 
-    const now = new Date();
-    const labelDate = now.toLocaleDateString('pt-BR').replace(/\//g, '-');
-    const labelTime = String(now.getHours()).padStart(2, '0') + '-' + String(now.getMinutes()).padStart(2, '0');
-    const filename = `movimentacao_${labelDate}_${labelTime}.xlsx`;
-
+    // ── Workbook ────────────────────────────────────────────────────────────
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'StockPRO';
 
-    // ========== ABA: EntradaSaida ==========
-    const sheetES = workbook.addWorksheet('EntradaSaida');
+    const sheet = workbook.addWorksheet('Movimentacoes');
 
-    sheetES.mergeCells('A1:J1');
-    const titleES = sheetES.getCell('A1');
-    titleES.value = 'STOCKPRO — RELATÓRIO DE MOVIMENTAÇÃO';
-    titleES.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
-    titleES.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
-    titleES.alignment = { horizontal: 'center', vertical: 'middle' };
-    sheetES.getRow(1).height = 25;
-
-    sheetES.columns = [
-      { header: 'DATA E HORA', key: 'dataHora', width: 22 },
-      { header: 'TIPO', key: 'tipo', width: 12 },
-      { header: 'CÓDIGO', key: 'codigo', width: 15 },
-      { header: 'PRODUTO', key: 'produto', width: 35 },
-      { header: 'QUANTIDADE', key: 'quantidade', width: 15 },
-      { header: 'MODELO', key: 'modelo', width: 18 },
-      { header: 'CLIENTE', key: 'cliente', width: 30 },
-      { header: 'NG', key: 'ng', width: 15 },
-      { header: 'RESPONSÁVEL', key: 'responsavel', width: 25 },
-      { header: 'OBSERVAÇÃO', key: 'observacao', width: 35 },
+    // ── Colunas (sem row de título — igual ao print) ─────────────────────
+    sheet.columns = [
+      { key: 'dataHora',    width: 20 },
+      { key: 'tipo',        width: 12 },
+      { key: 'codigo',      width: 14 },
+      { key: 'produto',     width: 36 },
+      { key: 'quantidade',  width: 14 },
+      { key: 'modelo',      width: 18 },
+      { key: 'cliente',     width: 28 },
+      { key: 'ng',          width: 16 },
     ];
 
-    // Header row styling (row 2)
-    const headerRow = sheetES.getRow(2);
-    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
+    // ── Linha de cabeçalho (row 1) ───────────────────────────────────────
+    const HEADERS = [
+      'Data e Hora', 'Tipo', 'Codigo', 'Produto',
+      'Quantidade', 'Modelo', 'Cliente', 'NG',
+    ];
+
+    const headerRow = sheet.addRow(HEADERS);
+    headerRow.height = 22;
     headerRow.eachCell((cell) => {
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E40AF' } };
-      cell.alignment = { horizontal: 'center', vertical: 'middle' };
-      cell.border = {
-        bottom: { style: 'thin', color: { argb: 'FF1E3A8A' } },
+      cell.value    = cell.value;         // mantém o texto
+      cell.font     = { bold: true, color: { argb: WHITE_TEXT }, size: 10, name: 'Calibri' };
+      cell.fill     = { type: 'pattern', pattern: 'solid', fgColor: { argb: BLUE_HEADER } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: false };
+      cell.border   = {
+        top:    { style: 'thin', color: { argb: BORDER_COLOR } },
+        left:   { style: 'thin', color: { argb: BORDER_COLOR } },
+        bottom: { style: 'thin', color: { argb: BORDER_COLOR } },
+        right:  { style: 'thin', color: { argb: BORDER_COLOR } },
       };
     });
 
-    // Data rows
+    // AutoFilter — ícone de ▼ em cada coluna (igual ao Excel do print)
+    sheet.autoFilter = {
+      from: { row: 1, column: 1 },
+      to:   { row: 1, column: HEADERS.length },
+    };
+
+    // ── Linhas de dados ──────────────────────────────────────────────────
     for (const m of movements) {
       const dt = new Date(m.createdAt);
-      const dataHora = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-        + ' ' + dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      const dataHora =
+        dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
+        ' ' +
+        dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
-      const row = sheetES.addRow({
+      const row = sheet.addRow({
         dataHora,
-        tipo: m.type === 'ENTRADA' ? 'Entrada' : 'Saída',
-        codigo: m.product?.codigo ?? '',
-        produto: m.product?.nome ?? '',
+        tipo:       m.type === 'ENTRADA' ? 'Entrada' : 'Saída',
+        codigo:     m.product?.codigo ?? '',
+        produto:    m.product?.nome   ?? '',
         quantidade: m.quantidade,
-        modelo: m.product?.modelo || '-',
-        cliente: m.product?.cliente?.nome || '-',
-        ng: m.notaFiscal || '-',
-        responsavel: m.user ? `${m.user.nome} (${m.user.matricula})` : '-',
-        observacao: m.observacao || '-',
+        modelo:     m.product?.modelo || '-',
+        cliente:    m.product?.cliente?.nome || '-',
+        ng:         m.notaFiscal || '-',
       });
 
-      row.eachCell((cell) => {
-        cell.border = { bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
-        cell.alignment = { vertical: 'middle' };
+      row.height = 18;
+      row.eachCell({ includeEmpty: true }, (cell) => {
+        cell.font      = { size: 10, name: 'Calibri' };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.border    = {
+          top:    { style: 'hair', color: { argb: BORDER_COLOR } },
+          left:   { style: 'hair', color: { argb: BORDER_COLOR } },
+          bottom: { style: 'hair', color: { argb: BORDER_COLOR } },
+          right:  { style: 'hair', color: { argb: BORDER_COLOR } },
+        };
       });
 
-      // Color coding for type
-      const tipoCell = row.getCell('tipo');
-      if (m.type === 'ENTRADA') {
-        tipoCell.font = { color: { argb: 'FF047857' }, bold: true };
-      } else {
-        tipoCell.font = { color: { argb: 'FFDC2626' }, bold: true };
-      }
+      // Produto: alinhado à esquerda (mais legível)
+      row.getCell(4).alignment = { horizontal: 'left', vertical: 'middle' };
 
-      // Quantity with sign color
-      const qtyCell = row.getCell('quantidade');
-      qtyCell.alignment = { horizontal: 'center' };
-      if (m.type === 'ENTRADA') {
-        qtyCell.font = { color: { argb: 'FF047857' }, bold: true };
-      } else {
-        qtyCell.font = { color: { argb: 'FFDC2626' }, bold: true };
-      }
+      // Tipo colorido
+      const tipoCell = row.getCell(2);
+      tipoCell.font = {
+        size: 10, name: 'Calibri', bold: false,
+        color: { argb: m.type === 'ENTRADA' ? 'FF1B5E20' : 'FFB71C1C' },
+      };
+
+      // Quantidade colorida
+      const qtyCell = row.getCell(5);
+      qtyCell.font = {
+        size: 10, name: 'Calibri', bold: true,
+        color: { argb: m.type === 'ENTRADA' ? 'FF1B5E20' : 'FFB71C1C' },
+      };
     }
 
-    // ========== ABA: Movimentacao (resumo) ==========
-    const sheetMov = workbook.addWorksheet('Movimentacao');
-
-    sheetMov.mergeCells('A1:E1');
-    const titleMov = sheetMov.getCell('A1');
-    titleMov.value = 'RESUMO DE MOVIMENTAÇÃO';
-    titleMov.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
-    titleMov.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
-    titleMov.alignment = { horizontal: 'center', vertical: 'middle' };
-    sheetMov.getRow(1).height = 25;
-
-    sheetMov.columns = [
-      { header: 'MÉTRICA', key: 'metrica', width: 30 },
-      { header: 'VALOR', key: 'valor', width: 20 },
-    ];
-
-    const headerMov = sheetMov.getRow(2);
-    headerMov.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    headerMov.eachCell((cell) => {
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } };
-      cell.alignment = { horizontal: 'center' };
-    });
-
-    const totalEntradas = movements.filter((m) => m.type === 'ENTRADA').length;
-    const totalSaidas = movements.filter((m) => m.type === 'SAIDA').length;
-    const qtdEntradas = movements.filter((m) => m.type === 'ENTRADA').reduce((acc, m) => acc + m.quantidade, 0);
-    const qtdSaidas = movements.filter((m) => m.type === 'SAIDA').reduce((acc, m) => acc + m.quantidade, 0);
-
-    const resumoRows = [
-      { metrica: 'Total de Movimentações', valor: movements.length },
-      { metrica: 'Entradas', valor: totalEntradas },
-      { metrica: 'Saídas', valor: totalSaidas },
-      { metrica: 'Quantidade Total Entrada', valor: qtdEntradas },
-      { metrica: 'Quantidade Total Saída', valor: qtdSaidas },
-      { metrica: 'Balanço Líquido', valor: qtdEntradas - qtdSaidas },
-    ];
-
-    for (const item of resumoRows) {
-      const row = sheetMov.addRow(item);
-      row.eachCell((cell) => {
-        cell.border = { bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
-        cell.alignment = { vertical: 'middle' };
-      });
-    }
-
-    // Footer
-    sheetES.addRow([]);
-    const footerES = sheetES.addRow([`Relatório gerado em ${now.toLocaleString('pt-BR')} — StockPRO Gestão de Ativos`]);
-    footerES.font = { italic: true, size: 8, color: { argb: 'FF64748B' } };
-    sheetES.mergeCells(footerES.number, 1, footerES.number, 10);
-
-    sheetMov.addRow([]);
-    const footerMov = sheetMov.addRow([`Relatório gerado em ${now.toLocaleString('pt-BR')} — StockPRO Gestão de Ativos`]);
-    footerMov.font = { italic: true, size: 8, color: { argb: 'FF64748B' } };
-    sheetMov.mergeCells(footerMov.number, 1, footerMov.number, 2);
+    // ── Gerar buffer e retornar ──────────────────────────────────────────
+    const now      = new Date();
+    const label    = now.toLocaleDateString('pt-BR').replace(/\//g, '-');
+    const filename = `movimentacao_${label}.xlsx`;
 
     const buffer = await workbook.xlsx.writeBuffer();
     return new Response(buffer, {
@@ -183,9 +155,9 @@ export async function GET(req: NextRequest) {
         'Content-Disposition': `attachment; filename="${filename}"`,
       },
     });
-  } catch (e) {
-    console.error(e);
-    return serverError();
+  } catch (e: any) {
+    console.error('[EXCEL MOVIMENTACAO] Erro:', e?.message || e);
+    return serverError('Erro ao gerar relatório Excel', e);
   }
 }
 
