@@ -29,6 +29,13 @@ export async function GET(req: NextRequest) {
           lte: new Date(`${endDateStr}T23:59:59.999Z`),
         },
       };
+    } else {
+      const startOfYear = new Date(new Date().getFullYear(), 0, 1);
+      dateFilter = {
+        createdAt: {
+          gte: startOfYear,
+        },
+      };
     }
 
     const movements = await prisma.movement.findMany({

@@ -17,11 +17,28 @@ export async function GET(req: NextRequest) {
     const endDate = searchParams.get('endDate') ?? undefined;
     const clienteId = searchParams.get('clienteId') ?? undefined;
 
+    let dateFilter: any = {};
+    if (startDate && endDate) {
+      dateFilter = {
+        createdAt: {
+          gte: new Date(`${startDate}T00:00:00.000Z`),
+          lte: new Date(`${endDate}T23:59:59.999Z`),
+        },
+      };
+    } else {
+      const startOfYear = new Date(new Date().getFullYear(), 0, 1);
+      dateFilter = {
+        createdAt: {
+          gte: startOfYear,
+        },
+      };
+    }
+
     const movements = await prisma.movement.findMany({
       where: {
         ...(productId && { productId }),
         ...(type && { type: type as any }),
-        ...(startDate && endDate && { createdAt: { gte: new Date(startDate), lte: new Date(endDate) } }),
+        ...dateFilter,
         ...(clienteId && { product: { clienteId } }),
         NOT: {
           OR: [
@@ -35,7 +52,6 @@ export async function GET(req: NextRequest) {
         user: { select: { id: true, nome: true, matricula: true } },
       },
       orderBy: { createdAt: 'desc' },
-      take: 200,
     });
 
     return Response.json(movements);
