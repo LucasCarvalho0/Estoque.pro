@@ -23,6 +23,12 @@ export async function GET(req: NextRequest) {
         ...(type && { type: type as any }),
         ...(startDate && endDate && { createdAt: { gte: new Date(startDate), lte: new Date(endDate) } }),
         ...(clienteId && { product: { clienteId } }),
+        NOT: {
+          OR: [
+            { observacao: { contains: 'invent', mode: 'insensitive' } },
+            { notaFiscal: { contains: 'invent', mode: 'insensitive' } },
+          ],
+        },
       },
       include: {
         product: { select: { id: true, codigo: true, nome: true, modelo: true, unidade: true, cliente: { select: { id: true, nome: true } } } },

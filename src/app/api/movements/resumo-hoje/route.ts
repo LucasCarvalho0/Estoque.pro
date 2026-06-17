@@ -15,8 +15,30 @@ export async function GET(req: NextRequest) {
     amanha.setDate(amanha.getDate() + 1);
 
     const [entradas, saidas] = await Promise.all([
-      prisma.movement.count({ where: { type: 'ENTRADA', createdAt: { gte: hoje, lt: amanha } } }),
-      prisma.movement.count({ where: { type: 'SAIDA', createdAt: { gte: hoje, lt: amanha } } }),
+      prisma.movement.count({
+        where: {
+          type: 'ENTRADA',
+          createdAt: { gte: hoje, lt: amanha },
+          NOT: {
+            OR: [
+              { observacao: { contains: 'invent', mode: 'insensitive' } },
+              { notaFiscal: { contains: 'invent', mode: 'insensitive' } },
+            ],
+          },
+        },
+      }),
+      prisma.movement.count({
+        where: {
+          type: 'SAIDA',
+          createdAt: { gte: hoje, lt: amanha },
+          NOT: {
+            OR: [
+              { observacao: { contains: 'invent', mode: 'insensitive' } },
+              { notaFiscal: { contains: 'invent', mode: 'insensitive' } },
+            ],
+          },
+        },
+      }),
     ]);
 
     return Response.json({ entradas, saidas, total: entradas + saidas });

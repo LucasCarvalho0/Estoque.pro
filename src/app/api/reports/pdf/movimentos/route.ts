@@ -18,7 +18,15 @@ export async function GET(req: NextRequest) {
     const lte = endDateStr ? new Date(`${endDateStr}T23:59:59.999Z`) : new Date();
 
     const movements = await prisma.movement.findMany({
-      where: { createdAt: { gte, lte } },
+      where: {
+        createdAt: { gte, lte },
+        NOT: {
+          OR: [
+            { observacao: { contains: 'invent', mode: 'insensitive' } },
+            { notaFiscal: { contains: 'invent', mode: 'insensitive' } },
+          ],
+        },
+      },
       include: {
         product: { select: { codigo: true, nome: true, unidade: true } },
         user: { select: { nome: true, matricula: true } },
