@@ -19,24 +19,20 @@ export async function GET(req: NextRequest) {
         where: {
           type: 'ENTRADA',
           createdAt: { gte: hoje, lt: amanha },
-          NOT: {
-            OR: [
-              { observacao: { contains: 'invent', mode: 'insensitive' } },
-              { notaFiscal: { contains: 'invent', mode: 'insensitive' } },
-            ],
-          },
+          AND: [
+            { OR: [{ observacao: { not: { contains: 'invent' } } }, { observacao: null }] },
+            { OR: [{ notaFiscal: { not: { contains: 'invent' } } }, { notaFiscal: null }] },
+          ],
         },
       }),
       prisma.movement.count({
         where: {
           type: 'SAIDA',
           createdAt: { gte: hoje, lt: amanha },
-          NOT: {
-            OR: [
-              { observacao: { contains: 'invent', mode: 'insensitive' } },
-              { notaFiscal: { contains: 'invent', mode: 'insensitive' } },
-            ],
-          },
+          AND: [
+            { OR: [{ observacao: { not: { contains: 'invent' } } }, { observacao: null }] },
+            { OR: [{ notaFiscal: { not: { contains: 'invent' } } }, { notaFiscal: null }] },
+          ],
         },
       }),
     ]);

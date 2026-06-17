@@ -20,12 +20,20 @@ export async function GET(req: NextRequest) {
     const movements = await prisma.movement.findMany({
       where: {
         createdAt: { gte, lte },
-        NOT: {
-          OR: [
-            { observacao: { contains: 'invent', mode: 'insensitive' } },
-            { notaFiscal: { contains: 'invent', mode: 'insensitive' } },
-          ],
-        },
+        AND: [
+          {
+            OR: [
+              { observacao: { not: { contains: 'invent' } } },
+              { observacao: null },
+            ],
+          },
+          {
+            OR: [
+              { notaFiscal: { not: { contains: 'invent' } } },
+              { notaFiscal: null },
+            ],
+          },
+        ],
       },
       include: {
         product: { select: { codigo: true, nome: true, unidade: true } },

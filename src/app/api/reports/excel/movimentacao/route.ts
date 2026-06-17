@@ -43,12 +43,20 @@ export async function GET(req: NextRequest) {
         ...(type      && { type: type as any }),
         ...dateFilter,
         ...(clienteId && { product: { clienteId } }),
-        NOT: {
-          OR: [
-            { observacao: { contains: 'invent', mode: 'insensitive' } },
-            { notaFiscal: { contains: 'invent', mode: 'insensitive' } },
-          ],
-        },
+        AND: [
+          {
+            OR: [
+              { observacao: { not: { contains: 'invent' } } },
+              { observacao: null },
+            ],
+          },
+          {
+            OR: [
+              { notaFiscal: { not: { contains: 'invent' } } },
+              { notaFiscal: null },
+            ],
+          },
+        ],
       },
       include: {
         product: {
