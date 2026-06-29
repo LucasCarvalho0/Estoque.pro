@@ -35,13 +35,14 @@ export async function GET(req: NextRequest) {
       return new Response('Nenhum inventário concluído encontrado', { status: 404 });
     }
 
-    // Criar um mapa (dicionário) para busca rápida da quantidade pelo código
+    // Criar um mapa (dicionário) para busca rápida da quantidade pelo código, e um Set para itens auditados
     const qtyMap = new Map();
+    const auditedSet = new Set();
     latestInventory.items.forEach(item => {
-      // Usar quantidadeContada apenas se o item foi efetivamente conferido no inventário.
-      // Se não foi conferido, quantidadeContada é 0 (padrão), então usa quantidadeSistema para não distorcer.
-      const qty = item.conferido ? item.quantidadeContada : item.quantidadeSistema;
-      qtyMap.set(item.product.codigo, qty);
+      if (item.conferido) {
+        qtyMap.set(item.product.codigo, item.quantidadeContada);
+        auditedSet.add(item.product.codigo);
+      }
     });
 
     const inventoryDate = latestInventory.finalizadoEm ? new Date(latestInventory.finalizadoEm) : new Date(latestInventory.iniciadoEm);
@@ -77,7 +78,9 @@ export async function GET(req: NextRequest) {
       console.log('Logos not found or error loading them', e);
     }
 
-    const createSheet = (sheetName: string, items: any[]) => {
+    const createSheet = (sheetName: string, rawItems: any[]) => {
+      // Filtrar para mostrar apenas os itens que foram auditados no inventário
+      const items = rawItems.filter(p => auditedSet.has(p.codigo));
       const sheet = workbook.addWorksheet(sheetName);
 
       // ========== CABEÇALHO PRINCIPAL (Linhas 1-2) ==========
