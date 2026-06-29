@@ -79,8 +79,8 @@ export async function GET(req: NextRequest) {
     }
 
     const createSheet = (sheetName: string, rawItems: any[]) => {
-      // Filtrar para mostrar apenas os itens que foram auditados no inventário
-      const items = rawItems.filter(p => auditedSet.has(p.codigo));
+      // Não filtrar os itens (mostrar todos do template padrão)
+      const items = rawItems;
       const sheet = workbook.addWorksheet(sheetName);
 
       // ========== CABEÇALHO PRINCIPAL (Linhas 1-2) ==========
