@@ -57,6 +57,25 @@ export async function POST(req: NextRequest) {
 
     const products = await prisma.product.findMany({ where: { ativo: true }, select: { id: true, quantidade: true } });
 
+    // Buscar o último inventário concluído para usar as quantidades contadas como ponto de partida
+    const ultimoInventario = await prisma.inventory.findFirst({
+      where: { status: 'CONCLUIDO' },
+      orderBy: { finalizadoEm: 'desc' },
+      include: {
+        items: { select: { productId: true, quantidadeContada: true, conferido: true } },
+      },
+    });
+
+    // Mapa: productId → quantidadeContada do último inventário (apenas itens conferidos)
+    const ultimoInventarioMap = new Map<string, number>();
+    if (ultimoInventario) {
+      for (const item of ultimoInventario.items) {
+        if (item.conferido) {
+          ultimoInventarioMap.set(item.productId, item.quantidadeContada);
+        }
+      }
+    }
+
     const inventory = await prisma.inventory.create({
       data: {
         responsavel,
@@ -65,7 +84,9 @@ export async function POST(req: NextRequest) {
         items: {
           create: products.map((p) => ({
             productId: p.id,
-            quantidadeSistema: p.quantidade,
+            // Se o produto existia no último inventário (conferido), usa aquela contagem como base.
+            // Caso contrário, usa a quantidade atual do produto no banco.
+            quantidadeSistema: ultimoInventarioMap.has(p.id) ? ultimoInventarioMap.get(p.id)! : p.quantidade,
             quantidadeContada: 0,
             divergencia: 0,
           })),

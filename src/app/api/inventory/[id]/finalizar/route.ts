@@ -55,6 +55,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
           },
         });
 
+        // BUG 2 FIX: Atualizar o estoque real do produto com o valor contado no inventário.
+        // Isso garante que o saldo do sistema reflita a contagem física realizada.
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { quantidade: qContada },
+        });
+
         // Lógica de Alerta otimizada (checa em memória)
         if (qContada < invItem.quantidadeSistema && !activeAlertsSet.has(item.productId)) {
           await tx.alert.create({

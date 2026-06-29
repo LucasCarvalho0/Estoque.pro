@@ -19,7 +19,10 @@ export async function GET(req: NextRequest) {
       orderBy: { finalizadoEm: 'desc' },
       include: {
         items: {
-          include: {
+          select: {
+            conferido: true,
+            quantidadeContada: true,
+            quantidadeSistema: true,
             product: {
               select: { codigo: true }
             }
@@ -35,8 +38,10 @@ export async function GET(req: NextRequest) {
     // Criar um mapa (dicionário) para busca rápida da quantidade pelo código
     const qtyMap = new Map();
     latestInventory.items.forEach(item => {
-      // Prioridade para o que foi efetivamente contado no inventário
-      qtyMap.set(item.product.codigo, item.quantidadeContada ?? item.quantidadeSistema);
+      // Usar quantidadeContada apenas se o item foi efetivamente conferido no inventário.
+      // Se não foi conferido, quantidadeContada é 0 (padrão), então usa quantidadeSistema para não distorcer.
+      const qty = item.conferido ? item.quantidadeContada : item.quantidadeSistema;
+      qtyMap.set(item.product.codigo, qty);
     });
 
     const inventoryDate = latestInventory.finalizadoEm ? new Date(latestInventory.finalizadoEm) : new Date(latestInventory.iniciadoEm);
