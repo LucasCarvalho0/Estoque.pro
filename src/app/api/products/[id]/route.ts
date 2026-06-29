@@ -55,7 +55,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         } 
       });
       await registrarLog({ 
-        action: 'SUCATA_REGISTRADA', 
+        action: 'PRODUTO_EDITADO', 
         descricao: `-${quantidade} "${product.nome}" movido para sucata. ${observacao || ''}`, 
         entidade: 'Product', 
         entidadeId: params.id, 
