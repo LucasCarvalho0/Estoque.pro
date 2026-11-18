@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Card, CardHeader, CardTitle, Badge, Button, PageHeader, PageLoading, Modal, ModalBody, ModalFooter, Input, Select } from '@/components/ui';
+import { Card, CardHeader, CardTitle, Badge, Button, PageHeader, PageLoading, Modal, ModalBody, ModalFooter, Input, Select, InfoBanner } from '@/components/ui';
 import { useUsers } from '@/hooks';
 import { usersService } from '@/services';
 import { useQueryClient } from '@tanstack/react-query';
@@ -15,19 +15,9 @@ import type { User } from '@/types';
 import { useAuthStore } from '@/store/auth.store';
 import { UserModal } from '@/components/modals';
 
-const schema = z.object({
-  matricula: z.string().min(1, 'Obrigatório'),
-  nome: z.string().min(2, 'Obrigatório'),
-  email: z.string().email('E-mail inválido'),
-  senha: z.string().min(6, 'Mínimo 6 caracteres'),
-  role: z.enum(['ESTOQUISTA', 'LIDER', 'ADMINISTRADOR']),
-});
-
-type FormData = z.infer<typeof schema>;
-
 const roleLabels: Record<string, string> = {
   ESTOQUISTA: 'Estoquista',
-  LIDER: 'Líder',
+  LIDER: 'Líder de Turno',
   ADMINISTRADOR: 'Administrador',
 };
 
@@ -49,7 +39,7 @@ export default function UsuariosPage() {
 
   const handleNovoUsuario = () => {
     if (!isMaster) {
-      alert('🚫 Ação restrita: Apenas o responsável geral (Lucas Carvalho) pode cadastrar novos usuários.');
+      alert('Ação restrita: Apenas o gestor responsável tem permissão para cadastrar novos usuários.');
       return;
     }
     setCreateModalOpen(true);
@@ -83,61 +73,66 @@ export default function UsuariosPage() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 flex flex-col gap-5">
+      <div className="flex flex-col gap-5 max-w-[1680px] mx-auto min-h-screen pb-12">
         <PageHeader
-          title="Usuários do Sistema"
-          subtitle="Equipe Administrativa e Operacional"
+          title="Gestão de Usuários e Permissões"
+          subtitle="Equipe administrativa, líderes operacionais e estoquistas"
           actions={
             isMaster && (
-              <Button variant="primary" onClick={handleNovoUsuario}>
-                <Lucide.Plus size={14} /> Novo Usuário
+              <Button variant="primary" size="sm" onClick={handleNovoUsuario} className="gap-2">
+                <Lucide.Plus size={14} /> Novo Colaborador
               </Button>
             )
           }
         />
 
         {!isMaster && (
-          <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-center gap-3 text-amber-800 shadow-sm">
-            <Lucide.ShieldAlert size={20} className="text-amber-500 shrink-0" />
-            <p className="text-sm font-medium">
-              Apenas o responsável geral (**Lucas Carvalho**) tem permissão para cadastrar ou editar membros da equipe.
-            </p>
-          </div>
+          <InfoBanner type="info">
+            Perfil de visualização. Permissões de alteração de usuários são restritas ao Gestor de Unidade.
+          </InfoBanner>
         )}
 
         <Card>
-          <CardHeader>
-            <CardTitle>Usuários autorizados</CardTitle>
-            <Badge variant="gray">{users.length} ativos</Badge>
+          <CardHeader className="flex flex-row items-center justify-between p-4 sm:p-5">
+            <CardTitle>Colaboradores Credenciados</CardTitle>
+            <Badge variant="blue">{users.length} usuários ativos</Badge>
           </CardHeader>
 
           {isLoading ? <PageLoading /> : (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50">
-                    {['Matrícula', 'Nome', 'E-mail', 'Perfil', 'Status'].map((h) => (
-                      <th key={h} className="text-left px-5 py-2.5 text-[11px] font-medium text-slate-400 uppercase tracking-wider font-mono-custom">{h}</th>
-                    ))}
-                    {isMaster && <th className="text-left px-5 py-2.5 text-[11px] font-medium text-slate-400 uppercase tracking-wider font-mono-custom">Ações</th>}
+                  <tr className="bg-slate-900/80 border-b border-slate-800 text-slate-300 uppercase tracking-wider font-semibold text-[11px]">
+                    <th className="px-5 py-3 font-mono-custom">Matrícula</th>
+                    <th className="px-5 py-3">Nome do Colaborador</th>
+                    <th className="px-5 py-3">E-mail Corporativo</th>
+                    <th className="px-5 py-3">Função / Cargo</th>
+                    <th className="px-5 py-3">Status</th>
+                    {isMaster && <th className="px-5 py-3 text-right">Ações</th>}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
+                <tbody className="divide-y divide-slate-800/60">
                   {users.map((u) => (
-                    <tr key={u.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-5 py-3 text-[12px] text-slate-500 font-mono-custom">{u.matricula}</td>
-                      <td className="px-5 py-3 text-[13px] font-bold text-slate-800">{u.nome}</td>
-                      <td className="px-5 py-3 text-[12px] text-slate-500">{u.email}</td>
-                      <td className="px-5 py-3">
+                    <tr key={u.id} className="hover:bg-slate-800/40 transition-colors">
+                      <td className="px-5 py-3.5 text-slate-300 font-mono-custom font-semibold">
+                        {u.matricula}
+                      </td>
+                      <td className="px-5 py-3.5 font-bold text-white">
+                        {u.nome}
+                      </td>
+                      <td className="px-5 py-3.5 text-slate-300">
+                        {u.email}
+                      </td>
+                      <td className="px-5 py-3.5">
                         <Badge variant={roleBadge[u.role]}>{roleLabels[u.role]}</Badge>
                       </td>
-                      <td className="px-5 py-3">
+                      <td className="px-5 py-3.5">
                         <Badge variant={u.ativo ? 'green' : 'gray'}>{u.ativo ? 'Ativo' : 'Inativo'}</Badge>
                       </td>
                       {isMaster && (
-                        <td className="px-5 py-3 flex items-center gap-2">
-                          <Button size="sm" variant="secondary" onClick={() => openEdit(u)} className="text-[11px] font-bold">
-                            Editar Dados
+                        <td className="px-5 py-3.5 text-right">
+                          <Button size="sm" variant="secondary" onClick={() => openEdit(u)} className="text-xs">
+                            Editar
                           </Button>
                         </td>
                       )}
@@ -150,21 +145,23 @@ export default function UsuariosPage() {
         </Card>
       </div>
 
-      {/* Modal de Edição de E-mail */}
-      <Modal open={editModalOpen} onClose={() => setEditModalOpen(false)} title="Editar Usuário / Resetar Senha">
+      {/* Modal de Edição de Usuário */}
+      <Modal open={editModalOpen} onClose={() => setEditModalOpen(false)} title="Atualizar Cadastro do Usuário">
         <form onSubmit={handleEdit(onEditSubmit)}>
           <ModalBody className="flex flex-col gap-4">
-            <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 mb-2">
-              <p className="text-[11px] text-slate-400 uppercase font-bold tracking-widest mb-1">Usuário selecionado</p>
-              <p className="text-[14px] font-bold text-slate-800">{selectedUser?.nome}</p>
-              <p className="text-[11px] text-slate-500 font-mono-custom">Matrícula: {selectedUser?.matricula} · Perfil: {selectedUser && roleLabels[selectedUser.role]}</p>
+            <div className="bg-slate-900 p-3.5 rounded-lg border border-slate-700">
+              <span className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">Colaborador</span>
+              <p className="text-sm font-bold text-white mt-0.5">{selectedUser?.nome}</p>
+              <p className="text-xs text-slate-300 font-mono-custom mt-0.5">
+                Matrícula: {selectedUser?.matricula} · Função: {selectedUser && roleLabels[selectedUser.role]}
+              </p>
             </div>
             
-            <Input label="E-mail" type="email" placeholder="email@exemplo.com" {...regEdit('email', { required: true })} />
+            <Input label="E-mail Corporativo" type="email" placeholder="email@empresa.com" {...regEdit('email', { required: true })} />
             
             <div className="relative">
               <Input 
-                label="Definir Nova Senha (deixe vazio para manter)" 
+                label="Nova Senha (deixe em branco para manter a atual)" 
                 type={showEditPassword ? 'text' : 'password'} 
                 placeholder="Mínimo 6 caracteres"
                 {...regEdit('senha')} 
@@ -172,13 +169,13 @@ export default function UsuariosPage() {
               <button
                 type="button"
                 onClick={() => setShowEditPassword(!showEditPassword)}
-                className="absolute right-3 top-[32px] text-slate-400 hover:text-slate-600 transition-colors"
+                className="absolute right-3 top-[32px] text-slate-400 hover:text-white transition-colors"
                 title={showEditPassword ? 'Ocultar Senha' : 'Ver Senha'}
               >
                 {showEditPassword ? <Lucide.EyeOff size={16} /> : <Lucide.Eye size={16} />}
               </button>
             </div>
-            <p className="text-[10px] text-slate-400 italic">* Se você não digitar nada no campo de senha, a senha atual do funcionário continuará a mesma.</p>
+            <p className="text-[11px] text-slate-400 italic">Caso nenhuma senha seja informada, a credencial atual será preservada.</p>
           </ModalBody>
           <ModalFooter>
             <Button type="button" variant="secondary" onClick={() => setEditModalOpen(false)}>Cancelar</Button>

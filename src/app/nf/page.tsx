@@ -28,9 +28,9 @@ const nfSchema = z.object({
 type NfForm = z.infer<typeof nfSchema>;
 
 const statusConfig = {
-  ABERTA: { label: 'Em Aberto', variant: 'blue' as const, icon: Clock, color: 'text-blue-600', bg: 'bg-blue-50' },
-  PARCIAL: { label: 'Baixa Parcial', variant: 'amber' as const, icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-50' },
-  BAIXADA: { label: 'Concluída', variant: 'green' as const, icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50' },
+  ABERTA: { label: 'Em Aberto', variant: 'blue' as const, icon: Clock, badgeClass: 'text-blue-300 bg-blue-500/15 border-blue-500/30' },
+  PARCIAL: { label: 'Baixa Parcial', variant: 'amber' as const, icon: AlertCircle, badgeClass: 'text-amber-300 bg-amber-500/15 border-amber-500/30' },
+  BAIXADA: { label: 'Concluída', variant: 'green' as const, icon: CheckCircle, badgeClass: 'text-emerald-300 bg-emerald-500/15 border-emerald-500/30' },
 };
 
 export default function NfPage() {
@@ -102,30 +102,24 @@ export default function NfPage() {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col gap-8 p-1 md:p-4">
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight font-display">
-              Notas <span className="text-blue-600">Fiscais</span>
-            </h1>
-            <p className="text-slate-500 font-medium max-w-lg">
-              Rastreabilidade total de saídas. Monitore e processe baixas de estoque com eficiência e segurança.
-            </p>
-          </div>
-          <Button variant="primary" onClick={() => setCreateOpen(true)} className="h-12 px-8 premium-gradient shadow-xl shadow-blue-200 group">
-            <Plus size={20} className="mr-2 group-hover:scale-125 transition-transform" /> 
-            <span className="font-bold">Emitir Nova NF</span>
-          </Button>
-        </div>
+      <div className="flex flex-col gap-6 max-w-[1680px] mx-auto min-h-screen pb-12">
+        <PageHeader
+          title="Notas Fiscais de Clientes"
+          subtitle="Rastreabilidade e conciliação física de documentos fiscais emitidos"
+          actions={
+            <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)} className="gap-2">
+              <Plus size={15} /> Registrar Nova NF
+            </Button>
+          }
+        />
 
-        {/* Filter Bar */}
-        <div className="glass p-4 md:p-5 rounded-2xl md:rounded-3xl border border-white/40 shadow-sm flex flex-col md:flex-row items-center gap-4">
-          <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:flex-1">
-            <div className="flex items-center gap-2 px-4 py-3 bg-white/50 border border-slate-200 rounded-2xl group focus-within:border-blue-500 transition-all w-full md:w-auto">
-              <Filter size={16} className="text-slate-400" />
+        {/* Barra de Filtros Corporativos */}
+        <div className="enterprise-panel p-4 flex flex-col md:flex-row items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:flex-1">
+            <div className="flex items-center gap-2 px-3 py-2 bg-slate-900 border border-slate-700 rounded-md w-full sm:w-auto">
+              <Filter size={14} className="text-blue-400 shrink-0" />
               <select
-                className="bg-transparent outline-none text-sm text-slate-600 font-bold min-w-0 md:min-w-[160px] w-full cursor-pointer"
+                className="bg-transparent outline-none text-xs text-slate-200 font-medium w-full cursor-pointer"
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
               >
@@ -136,134 +130,135 @@ export default function NfPage() {
               </select>
             </div>
 
-            <div className="flex items-center gap-2 px-4 py-3 bg-white/50 border border-slate-200 rounded-2xl group focus-within:border-blue-500 transition-all w-full md:flex-1">
-              <Search size={16} className="text-slate-400" />
+            <div className="flex items-center gap-2 px-3 py-2 bg-slate-900 border border-slate-700 rounded-md w-full sm:flex-1">
+              <Search size={14} className="text-slate-400 shrink-0" />
               <select
-                className="bg-transparent outline-none text-sm text-slate-600 font-bold w-full cursor-pointer"
+                className="bg-transparent outline-none text-xs text-slate-200 font-medium w-full cursor-pointer"
                 value={filterCliente}
                 onChange={(e) => setFilterCliente(e.target.value)}
               >
-                <option value="">Filtrar por Cliente</option>
+                <option value="">Filtrar por Cliente...</option>
                 {clientes.map((c: any) => (
                   <option key={c.id} value={c.id}>{c.nome}</option>
                 ))}
               </select>
             </div>
           </div>
-          <div className="h-10 w-[1px] bg-slate-200 hidden md:block mx-1" />
-          <span className="text-[10px] md:text-sm font-black text-slate-400 font-mono-custom px-4 uppercase whitespace-nowrap">{nfs.length} DOCUMENTO(S)</span>
+          <div className="text-xs font-semibold text-slate-300 font-mono-custom whitespace-nowrap self-end md:self-center">
+            {nfs.length} DOCUMENTO(S)
+          </div>
         </div>
 
-        {/* NF Feed */}
+        {/* Lista de NFs */}
         {isLoading ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map(i => <div key={i} className="h-32 bg-white/30 rounded-3xl animate-pulse border border-white/50 shadow-sm" />)}
-          </div>
+          <PageLoading />
         ) : nfs.length === 0 ? (
-          <div className="py-24 text-center glass rounded-[3rem] border border-dashed border-slate-300/60 max-w-3xl mx-auto w-full">
-            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <FileDown size={40} className="text-slate-200" />
+          <div className="enterprise-panel py-20 text-center flex flex-col items-center gap-3">
+            <div className="w-14 h-14 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 border border-slate-700">
+              <FileDown size={28} />
             </div>
-            <h3 className="text-xl font-bold text-slate-800">Cofre Vazio</h3>
-            <p className="text-slate-500 mt-2">Nenhuma nota fiscal encontrada nos critérios selecionados.</p>
+            <h3 className="text-base font-bold text-white">Nenhum documento localizado</h3>
+            <p className="text-xs text-slate-300 max-w-sm mx-auto">
+              Nenhuma nota fiscal encontrada para os filtros selecionados.
+            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 gap-3.5">
             {nfs.map((nf: any) => {
-              const cfg = statusConfig[nf.status as keyof typeof statusConfig];
+              const cfg = statusConfig[nf.status as keyof typeof statusConfig] || statusConfig.ABERTA;
               const totalItens = nf.items.reduce((s: number, i: any) => s + i.quantidade, 0);
               const totalBaixado = nf.items.reduce((s: number, i: any) => s + i.quantidadeBaixada, 0);
               const pctBaixado = totalItens > 0 ? Math.round(((totalBaixado || 0) / totalItens) * 100) : 0;
               const Icon = cfg.icon;
 
               return (
-                <div key={nf.id} className="group bg-white/80 backdrop-blur-sm border border-slate-200/50 rounded-3xl p-6 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div key={nf.id} className="enterprise-panel p-4 sm:p-5 hover:border-slate-600 transition-colors">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className={cn("p-2.5 rounded-2xl", cfg.bg)}>
-                          <FileText size={20} className={cfg.color} />
+                      <div className="flex flex-wrap items-center gap-3 mb-2">
+                        <div className="p-2 rounded-md bg-blue-600/15 text-blue-400 border border-blue-500/25">
+                          <FileText size={18} />
                         </div>
                         <div>
-                          <h3 className="text-lg font-black text-slate-900 tracking-tight font-display">
-                            NOTA FISCAL <span className="text-blue-600">{nf.numero}</span>
+                          <h3 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
+                            <span>NOTA FISCAL</span>
+                            <span className="text-blue-400 font-mono-custom font-bold">{nf.numero}</span>
                           </h3>
-                          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest font-mono-custom">
-                            Emitida em {formatDateTime(nf.dataEmissao)} • Por {nf.user.nome}
+                          <p className="text-[11px] text-slate-300 font-mono-custom mt-0.5">
+                            Emissão: {formatDateTime(nf.dataEmissao)} • Responsável: <strong className="text-white">{nf.user?.nome}</strong>
                           </p>
                         </div>
-                        <div className={cn(
-                          'ml-auto md:ml-0 px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-tighter border-2 flex items-center gap-1.5',
-                          nf.status === 'BAIXADA' ? 'bg-green-50 text-green-600 border-green-100' :
-                          nf.status === 'PARCIAL' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                          'bg-blue-50 text-blue-600 border-blue-100'
+                        <span className={cn(
+                          'ml-auto md:ml-0 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border flex items-center gap-1.5',
+                          cfg.badgeClass
                         )}>
                           <Icon size={12} />
                           {cfg.label}
-                        </div>
+                        </span>
                       </div>
 
-                      <div className="flex flex-col md:flex-row md:items-center gap-6 mt-4">
-                        <div className="min-w-[200px]">
-                            <p className="text-[9px] uppercase font-bold text-slate-400 tracking-tighter mb-1">Destinatário</p>
-                            <p className="text-sm font-extrabold text-slate-700 truncate">{nf.cliente.nome}</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3 pt-3 border-t border-slate-800">
+                        <div>
+                          <span className="text-[10px] uppercase font-semibold text-slate-400">Cliente Destinatário</span>
+                          <p className="text-xs font-semibold text-white truncate mt-0.5">{nf.cliente?.nome}</p>
                         </div>
 
-                        <div className="flex-1">
-                          <div className="flex justify-between items-center mb-1.5">
-                            <p className="text-[9px] uppercase font-bold text-slate-400 tracking-tighter">Fluxo de Saída</p>
-                            <span className="text-[10px] font-black text-slate-900 font-mono-custom">{pctBaixado}% CONCLUÍDO</span>
+                        <div>
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-[10px] uppercase font-semibold text-slate-400">Progresso da Saída</span>
+                            <span className="text-[11px] font-bold text-white font-mono-custom">{pctBaixado}%</span>
                           </div>
-                          <div className="h-3 w-full rounded-full overflow-hidden bg-slate-100 p-0.5 border border-slate-200/50">
+                          <div className="h-2 w-full rounded-full bg-slate-900 border border-slate-800 overflow-hidden">
                             <div
-                              className={cn(
-                                "h-full rounded-full transition-all duration-1000 premium-gradient shadow-sm shadow-blue-100",
-                                pctBaixado === 100 ? 'from-green-400 to-green-600' : 
-                                pctBaixado > 0 ? 'from-amber-400 to-amber-600 shadow-amber-100' : 'from-blue-400 to-blue-600'
-                              )}
+                              className="h-full bg-blue-500 rounded-full transition-all duration-500"
                               style={{ width: `${pctBaixado}%` }}
                             />
                           </div>
                         </div>
 
-                        <div className="text-right hidden lg:block">
-                            <p className="text-[9px] uppercase font-bold text-slate-400 tracking-tighter mb-1">Volumes</p>
-                            <p className="text-sm font-black text-slate-900 font-mono-custom">{totalBaixado} / {totalItens} <span className="text-[10px] text-slate-400 uppercase">un</span></p>
+                        <div className="sm:text-right">
+                          <span className="text-[10px] uppercase font-semibold text-slate-400">Volumes Baixados</span>
+                          <p className="text-xs font-bold text-white font-mono-custom mt-0.5">
+                            {totalBaixado} / {totalItens} un
+                          </p>
                         </div>
                       </div>
 
-                      {/* Items Preview */}
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {nf.items.slice(0, 5).map((item: any) => (
+                      {/* Lista resumida de itens */}
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {nf.items.slice(0, 6).map((item: any) => (
                           <div key={item.id} className={cn(
-                            "px-3 py-1 rounded-xl text-[10px] font-bold border border-dashed transition-colors",
-                            item.quantidadeBaixada >= item.quantidade ? "bg-green-50/50 border-green-200 text-green-700" : "bg-slate-50 border-slate-200 text-slate-500"
+                            "px-2.5 py-1 rounded text-[11px] font-mono-custom border",
+                            item.quantidadeBaixada >= item.quantidade 
+                              ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-300 font-semibold" 
+                              : "bg-slate-900 border-slate-700 text-slate-200"
                           )}>
-                             {item.product.nome} • {item.quantidadeBaixada}/{item.quantidade}
+                            {item.product.nome} ({item.quantidadeBaixada}/{item.quantidade})
                           </div>
                         ))}
-                        {nf.items.length > 5 && (
-                          <div className="px-3 py-1 rounded-xl text-[10px] font-bold bg-slate-50 border border-slate-200 text-slate-400">
-                             +{nf.items.length - 5} itens
+                        {nf.items.length > 6 && (
+                          <div className="px-2 py-1 rounded text-[11px] font-mono-custom bg-slate-800 border border-slate-700 text-slate-300">
+                            +{nf.items.length - 6} outros
                           </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="pt-3 md:pt-0 border-t md:border-t-0 border-slate-800 shrink-0">
                       {nf.status !== 'BAIXADA' ? (
                         <Button 
                           variant="primary" 
-                          className="h-14 px-6 rounded-2xl shadow-lg hover:shadow-blue-500/20 premium-gradient group"
+                          size="sm"
                           onClick={() => openBaixa(nf)}
+                          className="w-full md:w-auto gap-2"
                         >
-                          <span className="font-bold">Baixar Ativos</span>
-                          <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                          <span>Processar Baixa</span>
+                          <ArrowRight size={14} />
                         </Button>
                       ) : (
-                        <div className="h-14 px-6 rounded-2xl bg-green-50 text-green-600 border-2 border-green-100 flex items-center gap-2 font-black text-sm">
-                           <CheckCircle size={18} />
-                           DOCUMENTO FINALIZADO
+                        <div className="px-3 py-1.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center justify-center gap-1.5 font-bold text-xs">
+                          <CheckCircle size={15} />
+                          Finalizado
                         </div>
                       )}
                     </div>
@@ -275,130 +270,116 @@ export default function NfPage() {
         )}
       </div>
 
-      {/* ─── Modal: Criar NF ─────────────────────────────────────────────────── */}
-      <Modal open={createOpen} onClose={() => { reset(); setCreateOpen(false); }} title="Emissão de Documento Fiscal" width="max-w-2xl">
+      {/* Modal Criar NF */}
+      <Modal open={createOpen} onClose={() => { reset(); setCreateOpen(false); }} title="Emitir Documento de Saída (NF)" width="max-w-2xl">
         <form onSubmit={handleSubmit(onSubmit)}>
-          <ModalBody className="flex flex-col gap-6">
-            <div className="grid grid-cols-2 gap-4">
+          <ModalBody className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
                 label="Identificador da NF"
-                placeholder="Número da Nota"
+                placeholder="Ex: 004812"
                 error={errors.numero?.message}
                 {...register('numero')}
               />
               <Select
-                label="Entidade (Cliente)"
+                label="Cliente Destinatário"
                 error={errors.clienteId?.message}
                 {...register('clienteId')}
               >
-                <option value="">Vincular a um cliente...</option>
+                <option value="">Selecione um cliente...</option>
                 {clientes.map((c: any) => (
                   <option key={c.id} value={c.id}>{c.nome}</option>
                 ))}
               </Select>
             </div>
 
-            <Textarea label="Notas de Saída (opcional)" rows={2} placeholder="Justificativa ou instruções de entrega..." {...register('observacao')} />
+            <Textarea label="Observações de Saída" rows={2} placeholder="Ex: Carga expedida via transportadora parceira..." {...register('observacao')} />
 
-            <div className="space-y-4 pt-2">
+            <div className="space-y-3 pt-2">
               <div className="flex items-center justify-between">
-                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Composição da Carga</p>
+                <span className="text-xs font-semibold text-slate-200 uppercase tracking-wider">Itens da Carga</span>
                 <Button
                   type="button"
                   size="sm"
                   variant="secondary"
-                  className="rounded-xl h-8 px-4 font-bold text-[11px]"
                   onClick={() => append({ productId: '', quantidade: 1 })}
+                  className="text-xs"
                 >
-                  <Plus size={12} className="mr-1" /> Adicionar Item
+                  <Plus size={13} className="mr-1" /> Adicionar Item
                 </Button>
               </div>
 
-              <div className="flex flex-col gap-3 max-h-80 overflow-y-auto pr-2 scrollbar-premium">
+              <div className="flex flex-col gap-2.5 max-h-72 overflow-y-auto pr-1">
                 {fields.map((field, index) => {
                   const watchProductId = watch(`items.${index}.productId`);
                   const stock = getProductStock(watchProductId);
                   return (
-                    <div key={field.id} className="group flex items-start gap-3 p-4 bg-slate-50/50 hover:bg-white border-2 border-slate-100 hover:border-blue-100 rounded-2xl transition-all">
+                    <div key={field.id} className="flex items-start gap-2.5 p-3 bg-slate-900 border border-slate-700 rounded-md">
                       <div className="flex-1 space-y-1">
                         <select
-                          className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm font-bold text-slate-700"
+                          className="w-full px-3 py-1.5 bg-slate-950 border border-slate-700 rounded text-xs text-white outline-none focus:border-blue-500"
                           {...register(`items.${index}.productId`)}
                         >
-                          <option value="">Selecionar Ativo...</option>
+                          <option value="">Selecione um material...</option>
                           {productsForCliente.map((p: any) => (
                             <option key={p.id} value={p.id}>
-                              [{p.codigo}] {p.nome} — Stock: {p.quantidade} {p.unidade}
+                              [{p.codigo}] {p.nome} — Saldo: {p.quantidade} {p.unidade}
                             </option>
                           ))}
                         </select>
-                        <div className="flex justify-between items-center px-1">
-                          {errors.items?.[index]?.productId && (
-                             <p className="text-[10px] text-red-600 font-bold">{errors.items[index]?.productId?.message}</p>
-                          )}
-                          {watchProductId && (
-                            <p className="text-[10px] text-slate-400 font-bold ml-auto uppercase tracking-tighter">
-                              Estoque Local: <span className={cn("font-black", stock === 0 ? "text-red-600" : "text-green-600")}>{stock} un</span>
-                            </p>
-                          )}
-                        </div>
+                        {watchProductId && (
+                          <p className="text-[10px] text-slate-300 font-mono-custom">
+                            Saldo em estoque: <strong className={stock === 0 ? "text-rose-400" : "text-emerald-400"}>{stock} un</strong>
+                          </p>
+                        )}
                       </div>
                       <div className="w-24">
                         <input
                           type="number"
                           min={1}
-                          className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm font-black text-center"
+                          className="w-full px-2 py-1.5 bg-slate-950 border border-slate-700 rounded text-xs text-white text-center font-mono-custom font-bold outline-none focus:border-blue-500"
                           {...register(`items.${index}.quantidade`)}
                         />
                       </div>
                       <button
                         type="button"
                         onClick={() => remove(index)}
-                        className="p-2.5 text-slate-300 hover:text-red-500 transition-colors flex-shrink-0"
+                        className="p-1.5 text-slate-400 hover:text-rose-400 transition-colors"
                         disabled={fields.length === 1}
                       >
-                        <Trash2 size={18} />
+                        <Trash2 size={16} />
                       </button>
                     </div>
                   );
                 })}
               </div>
             </div>
-
-            <div className="bg-blue-50/50 p-4 rounded-3xl border border-blue-100/50 flex gap-3 italic">
-               <AlertCircle size={18} className="text-blue-600 flex-shrink-0" />
-               <p className="text-[11px] text-blue-700 font-medium">
-                 A emissão gera o documento, mas a reserva de estoque só é oficializada após o processamento da "Baixa de Ativos".
-               </p>
-            </div>
           </ModalBody>
           <ModalFooter>
-            <Button type="button" variant="secondary" className="px-6 rounded-xl" onClick={() => { reset(); setCreateOpen(false); }}>
+            <Button type="button" variant="secondary" onClick={() => { reset(); setCreateOpen(false); }}>
               Cancelar
             </Button>
-            <Button type="submit" variant="primary" className="px-10 premium-gradient rounded-xl shadow-lg" loading={createNF.isPending}>
-              Registrar Documento
+            <Button type="submit" variant="primary" loading={createNF.isPending}>
+              Registrar NF
             </Button>
           </ModalFooter>
         </form>
       </Modal>
 
-      {/* ─── Modal: Baixar NF ────────────────────────────────────────────────── */}
+      {/* Modal Baixar NF */}
       {selectedNf && (
         <Modal
           open={baixaOpen}
           onClose={() => { setBaixaOpen(false); setSelectedNf(null); }}
-          title={`Processamento de Baixa — NF ${selectedNf.numero}`}
+          title={`Processar Baixa Física — NF ${selectedNf.numero}`}
           width="max-w-xl"
         >
-          <ModalBody className="flex flex-col gap-6">
-            <div className="bg-amber-50/50 p-4 rounded-3xl border border-amber-100/50 flex gap-3">
-               <InfoBanner type="warning">
-                 Verifique fisicamente a saída dos itens antes de confirmar. Esta ação é irreversível e atualizará o estoque em tempo real.
-               </InfoBanner>
-            </div>
+          <ModalBody className="flex flex-col gap-4">
+            <InfoBanner type="warning">
+              Confirme a contagem física das peças antes de efetivar a baixa. O saldo do inventário será atualizado imediatamente.
+            </InfoBanner>
 
-            <div className="flex flex-col gap-3 max-h-96 overflow-y-auto pr-1">
+            <div className="flex flex-col gap-2.5 max-h-80 overflow-y-auto pr-1">
               {selectedNf.items.map((item: any) => {
                 const pendente = item.quantidade - item.quantidadeBaixada;
                 const isFullyBaixado = pendente <= 0;
@@ -409,74 +390,65 @@ export default function NfPage() {
                   <div
                     key={item.id}
                     className={cn(
-                      "group p-4 rounded-3xl border-2 transition-all",
-                      isFullyBaixado ? 'bg-green-50 border-green-100 opacity-60' : 'bg-white border-slate-100 hover:border-blue-200'
+                      "p-3 rounded-md border flex items-center justify-between gap-3",
+                      isFullyBaixado ? "bg-slate-900/40 border-slate-800 opacity-60" : "bg-slate-900 border-slate-700"
                     )}
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                             <div className={cn("w-2 h-2 rounded-full", isFullyBaixado ? "bg-green-500" : "bg-amber-500")} />
-                             <p className="text-sm font-black text-slate-900 truncate uppercase tracking-tight">{item.product.nome}</p>
-                        </div>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest font-mono-custom">
-                          [{item.product.codigo}] • Stock: {stockAtual} | Pendente: <span className="text-blue-600">{pendente}</span>
-                        </p>
-                      </div>
-                      
-                      {!isFullyBaixado && (
-                        <div className="flex flex-col items-end gap-1.5 min-w-[120px]">
-                            <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-xl border border-slate-100">
-                                <input
-                                  type="number"
-                                  min={0}
-                                  max={Math.min(pendente, stockAtual)}
-                                  value={qtdBaixar}
-                                  onChange={(e) =>
-                                    setBaixaItems((prev) => ({ ...prev, [item.id]: Number(e.target.value) }))
-                                  }
-                                  className="w-16 bg-transparent text-center font-black text-blue-600 outline-none"
-                                />
-                                <button
-                                  type="button"
-                                  className="px-2 py-0.5 bg-blue-600 text-[10px] font-black text-white rounded-lg hover:bg-slate-900 transition-colors"
-                                  onClick={() =>
-                                    setBaixaItems((prev) => ({
-                                      ...prev,
-                                      [item.id]: Math.min(pendente, stockAtual),
-                                    }))
-                                  }
-                                >
-                                  MAX
-                                </button>
-                            </div>
-                            <p className="text-[9px] font-bold text-slate-400">Total NF: {item.quantidade} un</p>
-                        </div>
-                      )}
-                      
-                      {isFullyBaixado && (
-                         <div className="flex items-center gap-1.5 text-green-600 font-black text-[10px] uppercase">
-                            <CheckCircle size={14} /> Concluído
-                         </div>
-                      )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-white truncate">{item.product.nome}</p>
+                      <p className="text-[11px] text-slate-300 font-mono-custom mt-0.5">
+                        [{item.product.codigo}] • Estoque: <strong className="text-white">{stockAtual}</strong> | Pendente: <strong className="text-blue-400">{pendente}</strong>
+                      </p>
                     </div>
+                    
+                    {!isFullyBaixado && (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={0}
+                          max={Math.min(pendente, stockAtual)}
+                          value={qtdBaixar}
+                          onChange={(e) =>
+                            setBaixaItems((prev) => ({ ...prev, [item.id]: Number(e.target.value) }))
+                          }
+                          className="w-16 px-2 py-1 bg-slate-950 border border-slate-700 rounded text-xs text-white text-center font-mono-custom font-bold outline-none"
+                        />
+                        <button
+                          type="button"
+                          className="px-2 py-1 bg-blue-600 text-[10px] font-bold text-white rounded hover:bg-blue-500 transition-colors"
+                          onClick={() =>
+                            setBaixaItems((prev) => ({
+                              ...prev,
+                              [item.id]: Math.min(pendente, stockAtual),
+                            }))
+                          }
+                        >
+                          MAX
+                        </button>
+                      </div>
+                    )}
+
+                    {isFullyBaixado && (
+                      <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
+                        <CheckCircle size={13} /> Concluído
+                      </span>
+                    )}
                   </div>
                 );
               })}
             </div>
           </ModalBody>
           <ModalFooter>
-            <Button type="button" variant="secondary" className="px-6 rounded-xl" onClick={() => { setBaixaOpen(false); setSelectedNf(null); }}>
+            <Button type="button" variant="secondary" onClick={() => { setBaixaOpen(false); setSelectedNf(null); }}>
               Cancelar
             </Button>
             <Button
               variant="primary"
-              className="px-10 premium-gradient rounded-xl shadow-lg"
               loading={baixarNF.isPending}
               onClick={handleBaixar}
               disabled={Object.values(baixaItems).every((v) => v === 0)}
             >
-              Confirmar Processamento
+              Confirmar Baixa de Estoque
             </Button>
           </ModalFooter>
         </Modal>

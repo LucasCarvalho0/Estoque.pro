@@ -5,6 +5,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardHeader, CardTitle, Badge, PageHeader, PageLoading } from '@/components/ui';
 import { useLogs } from '@/hooks';
 import { formatDateTime } from '@/lib/utils';
+import { ScrollText, Filter, ShieldCheck } from 'lucide-react';
 
 const actionColors: Record<string, 'green' | 'red' | 'blue' | 'amber' | 'gray'> = {
   LOGIN: 'gray', LOGOUT: 'gray',
@@ -16,17 +17,17 @@ const actionColors: Record<string, 'green' | 'red' | 'blue' | 'amber' | 'gray'> 
 };
 
 const actionOptions = [
-  { value: '', label: 'Todas as ações' },
+  { value: '', label: 'Todas as operações' },
   { value: 'LOGIN', label: 'Login' },
-  { value: 'ENTRADA_REGISTRADA', label: 'Entradas' },
-  { value: 'SAIDA_REGISTRADA', label: 'Saídas' },
-  { value: 'INVENTARIO_INICIADO', label: 'Inventário Iniciado' },
-  { value: 'INVENTARIO_FINALIZADO', label: 'Inventário Finalizado' },
-  { value: 'ALERTA_GERADO', label: 'Alertas Gerados' },
-  { value: 'PRODUTO_CRIADO', label: 'Produto Criado' },
-  { value: 'PRODUTO_EDITADO', label: 'Produto Editado' },
-  { value: 'USUARIO_CRIADO', label: 'Usuário Criado' },
-  { value: 'FORNECEDOR_CRIADO', label: 'Fornecedor Criado' },
+  { value: 'ENTRADA_REGISTRADA', label: 'Entradas de Estoque' },
+  { value: 'SAIDA_REGISTRADA', label: 'Saídas / Baixas' },
+  { value: 'INVENTARIO_INICIADO', label: 'Inventário Aberto' },
+  { value: 'INVENTARIO_FINALIZADO', label: 'Inventário Concluído' },
+  { value: 'ALERTA_GERADO', label: 'Alertas Operacionais' },
+  { value: 'PRODUTO_CRIADO', label: 'Cadastro de Produto' },
+  { value: 'PRODUTO_EDITADO', label: 'Edição de Produto' },
+  { value: 'USUARIO_CRIADO', label: 'Cadastro de Usuário' },
+  { value: 'FORNECEDOR_CRIADO', label: 'Cadastro de Fornecedor' },
 ];
 
 export default function AuditoriaPage() {
@@ -35,54 +36,65 @@ export default function AuditoriaPage() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 flex flex-col gap-5">
+      <div className="flex flex-col gap-5 max-w-[1680px] mx-auto min-h-screen pb-12">
         <PageHeader
-          title="Auditoria e Logs"
-          subtitle="Rastreabilidade total de ações do sistema"
-          actions={<Badge variant="gray">Registros imutáveis</Badge>}
+          title="Trilha de Auditoria e Logs"
+          subtitle="Registro cronológico imutável de todas as transações e acessos"
+          actions={<Badge variant="blue" className="font-semibold">Rastreabilidade em Tempo Real</Badge>}
         />
 
         <Card>
-          <CardHeader>
-            <select
-              className="px-3 py-1.5 text-sm border border-slate-200 rounded-md outline-none focus:border-blue-400 text-slate-600"
-              value={actionFilter}
-              onChange={(e) => setActionFilter(e.target.value)}
-            >
-              {actionOptions.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-            <Badge variant="blue">{logs.length} registros</Badge>
+          <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Filter size={14} className="text-blue-400 shrink-0" />
+              <select
+                className="px-3 py-1.5 text-xs bg-slate-900 border border-slate-700 rounded-md outline-none focus:border-blue-500 text-white w-full sm:w-64"
+                value={actionFilter}
+                onChange={(e) => setActionFilter(e.target.value)}
+              >
+                {actionOptions.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </div>
+            <span className="text-xs font-semibold text-slate-300 font-mono-custom self-end sm:self-auto">
+              {logs.length} EVENTOS REGISTRADOS
+            </span>
           </CardHeader>
 
           {isLoading ? (
             <PageLoading />
           ) : (
-            <div className="divide-y divide-slate-50">
+            <div className="divide-y divide-slate-800/60">
               {logs.map((log) => (
-                <div key={log.id} className="flex items-start gap-4 px-5 py-3 hover:bg-slate-50 transition-colors">
-                  <span className="text-[11px] text-slate-400 flex-shrink-0 w-32 pt-0.5 font-mono-custom">
+                <div key={log.id} className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4 px-4 sm:px-5 py-3.5 hover:bg-slate-800/40 transition-colors">
+                  <span className="text-xs text-slate-300 font-mono-custom shrink-0 sm:w-36 pt-0.5">
                     {formatDateTime(log.createdAt)}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] text-slate-600">
+                    <p className="text-xs sm:text-sm text-slate-200">
                       {log.user && (
-                        <strong className="text-slate-800 font-medium">{log.user.nome}</strong>
-                      )}{' '}
-                      {log.descricao}
+                        <strong className="text-white font-semibold">{log.user.nome}: </strong>
+                      )}
+                      <span>{log.descricao}</span>
                     </p>
                     {log.ipAddress && (
-                      <p className="text-[10px] text-slate-300 mt-0.5 font-mono-custom">IP: {log.ipAddress}</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5 font-mono-custom">Origem IP: {log.ipAddress}</p>
                     )}
                   </div>
-                  <Badge variant={actionColors[log.action] ?? 'gray'} className="flex-shrink-0">
-                    {log.action.replace(/_/g, ' ')}
-                  </Badge>
+                  <div className="self-start sm:self-auto pt-1 sm:pt-0">
+                    <Badge variant={actionColors[log.action] ?? 'gray'} className="text-[10px] uppercase font-semibold">
+                      {log.action.replace(/_/g, ' ')}
+                    </Badge>
+                  </div>
                 </div>
               ))}
               {logs.length === 0 && (
-                <div className="py-12 text-center text-[13px] text-slate-400">Nenhum log encontrado</div>
+                <div className="py-16 text-center text-slate-300 flex flex-col items-center gap-2">
+                  <ScrollText size={32} className="text-slate-500" />
+                  <p className="font-semibold text-white">Nenhum evento registrado</p>
+                  <p className="text-xs text-slate-400">Nenhum registro encontrado para a operação selecionada.</p>
+                </div>
               )}
             </div>
           )}

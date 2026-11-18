@@ -160,6 +160,20 @@ export const useUsers = () =>
 // Clientes
 export const useClientes = () =>
   useQuery({ queryKey: ['clientes'], queryFn: clientesService.findAll });
+export const useCreateCliente = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: clientesService.create,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['clientes'] }),
+  });
+};
+export const useUpdateCliente = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => clientesService.update(id, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['clientes'] }),
+  });
+};
 
 // NF
 export const useNFs = (params?: { clienteId?: string; status?: string }) =>

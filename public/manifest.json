@@ -1,11 +1,11 @@
 {
-  "name": "StockPRO Inventory",
+  "name": "StockPRO — Controle Corporativo",
   "short_name": "StockPRO",
   "description": "Sistema de Gestão de Estoque e Inventário Corporativo.",
-  "start_url": "/",
+  "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#2563eb",
+  "background_color": "#090e17",
+  "theme_color": "#090e17",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",

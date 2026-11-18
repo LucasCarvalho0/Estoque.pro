@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { Modal, ModalBody, ModalFooter, Button, Input, Select, Textarea, InfoBanner } from '@/components/ui';
+import { Modal, ModalBody, ModalFooter, Button, Input, Select, Textarea, InfoBanner, Badge } from '@/components/ui';
 import { useCreateMovement, useProducts, useCreateProduct, useUpdateProduct, useSuppliers, useIniciarInventario, useCreateSupplier, useTransferToNG } from '@/hooks';
 import { suppliersService, usersService } from '@/services';
 import { useQueryClient } from '@tanstack/react-query';
@@ -176,7 +176,7 @@ export function NgTransferModal({ open, onClose, product }: { open: boolean; onC
         </ModalBody>
         <ModalFooter>
           <Button type="button" variant="secondary" onClick={() => { reset(); onClose(); }}>Cancelar</Button>
-          <Button type="submit" variant="secondary" loading={transferToNG.isPending} className="bg-white hover:bg-red-50 font-bold border-red-200 text-red-600 shadow-sm px-8">Confirmar Baixa</Button>
+          <Button type="submit" variant="danger" loading={transferToNG.isPending} className="font-semibold px-6">Confirmar Baixa para Sucata</Button>
         </ModalFooter>
       </form>
     </Modal>
@@ -327,106 +327,83 @@ export function MovementsDetailModal({ open, onClose, movements }: {
   movements: any[];
 }) {
   return (
-    <Modal open={open} onClose={onClose} title="Fluxo Logístico — Detalhamento Completo" width="max-w-5xl">
+    <Modal open={open} onClose={onClose} title="Auditoria Completa de Movimentações" width="max-w-5xl">
       <ModalBody className="p-0 overflow-hidden">
         {/* Header de resumo */}
-        <div className="px-8 py-5 bg-gradient-to-r from-indigo-50 to-violet-50 border-b border-indigo-100 flex items-center justify-between">
+        <div className="px-6 py-4 bg-slate-900 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-200">
-              <Lucide.History size={18} strokeWidth={2.5} />
+            <div className="w-9 h-9 rounded-md bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
+              <Lucide.History size={16} />
             </div>
             <div>
-              <p className="text-[13px] font-black text-slate-900 tracking-tight">Últimas Movimentações</p>
-              <p className="text-[10px] text-indigo-500 font-black uppercase tracking-widest">{movements.length} registros no sistema</p>
+              <p className="text-xs font-bold text-white tracking-tight">Registro Consolidado de Transações</p>
+              <p className="text-[11px] text-slate-300 font-mono-custom">{movements.length} eventos registrados</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              {movements.filter((m: any) => m.type === 'ENTRADA').length} ENTRADAS
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-300 bg-emerald-500/15 px-2.5 py-1 rounded-md border border-emerald-500/30">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              {movements.filter((m: any) => m.type === 'ENTRADA').length} Entradas
             </span>
-            <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-rose-700 bg-rose-50 px-3 py-1.5 rounded-full border border-rose-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-              {movements.filter((m: any) => m.type === 'SAIDA').length} SAÍDAS
+            <span className="flex items-center gap-1.5 text-[11px] font-bold text-rose-300 bg-rose-500/15 px-2.5 py-1 rounded-md border border-rose-500/30">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+              {movements.filter((m: any) => m.type === 'SAIDA').length} Saídas
             </span>
           </div>
         </div>
 
         {/* Lista de movimentações */}
-        <div className="overflow-y-auto max-h-[65vh] divide-y divide-slate-50">
+        <div className="overflow-y-auto max-h-[60vh] divide-y divide-slate-800/80">
           {movements.length === 0 ? (
-            <div className="py-24 text-center">
-              <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mx-auto mb-4 shadow-inner">
-                <Lucide.PackageOpen size={36} className="text-slate-300" />
-              </div>
-              <p className="font-black text-slate-400 uppercase tracking-widest text-sm">Nenhuma movimentação encontrada</p>
+            <div className="py-16 text-center text-slate-300">
+              <Lucide.PackageOpen size={36} className="mx-auto text-slate-500 mb-2" />
+              <p className="font-semibold text-white">Nenhuma movimentação registrada</p>
             </div>
           ) : (
             movements.map((m: any) => (
-              <div key={m.id} className="group grid grid-cols-1 lg:grid-cols-[2fr_1fr_1fr_1.5fr] hover:bg-indigo-50/30 transition-all duration-200">
+              <div key={m.id} className="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr_1.5fr] hover:bg-slate-800/40 transition-colors p-4 sm:px-6 sm:py-3.5 gap-3 items-center">
                 {/* Material */}
-                <div className="px-8 py-5 flex items-center gap-4 border-r border-slate-50">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-md shrink-0 ${m.type === 'ENTRADA' ? 'bg-emerald-500 shadow-emerald-200' : 'bg-rose-500 shadow-rose-200'}`}>
-                    {m.type === 'ENTRADA'
-                      ? <Lucide.PackagePlus size={16} strokeWidth={2.5} />
-                      : <Lucide.PackageMinus size={16} strokeWidth={2.5} />
-                    }
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 border ${
+                    m.type === 'ENTRADA' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/15 text-rose-400 border-rose-500/30'
+                  }`}>
+                    {m.type === 'ENTRADA' ? <Lucide.PackagePlus size={15} /> : <Lucide.PackageMinus size={15} />}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[14px] font-black text-slate-900 truncate group-hover:text-indigo-900 transition-colors">{m.product?.nome}</p>
-                    <p className="text-[10px] font-black text-indigo-400 tracking-widest font-mono uppercase mt-0.5">{m.product?.codigo}</p>
-                    {m.observacao ? (
-                      <div className="mt-2 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
-                        <Lucide.MessageSquare size={12} className="text-amber-500 mt-0.5 shrink-0" />
-                        <p className="text-[11px] font-semibold text-amber-800 leading-tight break-words">{m.observacao}</p>
-                      </div>
-                    ) : (
-                      <p className="text-[10px] text-slate-300 italic mt-1">Sem observação</p>
+                    <p className="text-xs font-bold text-white truncate">{m.product?.nome}</p>
+                    <p className="text-[11px] text-slate-300 font-mono-custom mt-0.5">{m.product?.codigo}</p>
+                    {m.observacao && (
+                      <p className="text-[11px] text-amber-300 mt-0.5 italic">{m.observacao}</p>
                     )}
                   </div>
                 </div>
 
                 {/* Operação */}
-                <div className="px-6 py-5 flex items-center border-r border-slate-50">
-                  <div className="flex flex-col gap-2">
-                    <span className={`inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border w-fit ${m.type === 'ENTRADA' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
-                      {m.type === 'ENTRADA' ? <Lucide.ArrowDownLeft size={10} /> : <Lucide.ArrowUpRight size={10} />}
-                      {m.type}
+                <div className="flex flex-col gap-1">
+                  <Badge variant={m.type === 'ENTRADA' ? 'green' : 'red'}>
+                    {m.type}
+                  </Badge>
+                  {m.user && (
+                    <span className="text-[11px] text-slate-300 font-medium">
+                      Op: {m.user.nome?.split(' ')[0]}
                     </span>
-                    {m.user && (
-                      <p className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
-                        <Lucide.User size={10} />
-                        {m.user.nome?.split(' ')[0]}
-                      </p>
-                    )}
-                  </div>
+                  )}
                 </div>
 
                 {/* Quantidade */}
-                <div className="px-6 py-5 flex items-center border-r border-slate-50">
-                  <div className="flex flex-col">
-                    <span className={`text-2xl font-black font-mono tracking-tighter ${m.type === 'ENTRADA' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                      {m.type === 'ENTRADA' ? '+' : '-'}{m.quantidade}
-                    </span>
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{m.product?.unidade}</span>
-                  </div>
+                <div>
+                  <span className={`text-base font-bold font-mono-custom ${m.type === 'ENTRADA' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {m.type === 'ENTRADA' ? '+' : '-'}{m.quantidade} {m.product?.unidade}
+                  </span>
                 </div>
 
                 {/* Data/Hora */}
-                <div className="px-6 py-5 flex items-center">
-                  <div className="flex flex-col gap-1">
-                    <p className="text-[13px] font-black text-slate-800">{new Date(m.createdAt).toLocaleDateString('pt-BR')}</p>
-                    <p className="text-[11px] text-slate-400 font-bold flex items-center gap-1">
-                      <Lucide.Clock size={11} />
-                      {new Date(m.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                    {m.notaFiscal && (
-                      <p className="text-[10px] font-black text-indigo-500 tracking-widest flex items-center gap-1 mt-1">
-                        <Lucide.FileText size={10} />
-                        NF: {m.notaFiscal}
-                      </p>
-                    )}
-                  </div>
+                <div className="text-right sm:text-left">
+                  <p className="text-xs font-semibold text-slate-200">{new Date(m.createdAt).toLocaleDateString('pt-BR')}</p>
+                  <p className="text-[11px] text-slate-400 font-mono-custom">
+                    {new Date(m.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    {m.notaFiscal && ` · NF: ${m.notaFiscal}`}
+                  </p>
                 </div>
               </div>
             ))
@@ -434,7 +411,9 @@ export function MovementsDetailModal({ open, onClose, movements }: {
         </div>
       </ModalBody>
       <ModalFooter>
-        <Button type="button" variant="secondary" onClick={onClose}>Fechar</Button>
+        <Button variant="secondary" size="sm" onClick={onClose}>
+          Fechar
+        </Button>
       </ModalFooter>
     </Modal>
   );

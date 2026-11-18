@@ -1,63 +1,99 @@
 'use client';
+import { useEffect, useState } from 'react';
 import * as Lucide from 'lucide-react';
 import { useAlertsResumo } from '@/hooks';
 import { useAuthStore } from '@/store/auth.store';
 import { useUIStore } from '@/store/ui.store';
-import { formatDate } from '@/lib/utils';
 
 export function Topbar() {
   const { user } = useAuthStore();
   const { toggleMobileMenu } = useUIStore();
   const { data: resumo } = useAlertsResumo();
+  const [timeStr, setTimeStr] = useState<string>('');
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      setTimeStr(
+        now.toLocaleTimeString('pt-BR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      );
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
-    <header className="h-14 flex items-center justify-between px-4 lg:px-6 flex-shrink-0"
-      style={{ background: '#0a1628', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-      <div className="flex items-center gap-4">
-        {/* Hamburger Menu - Mobile Only */}
-        <button 
+    <header className="h-14 bg-[#0d1424] border-b border-slate-800 flex items-center justify-between px-3 sm:px-4 lg:px-6 flex-shrink-0 z-30 select-none">
+      {/* Lado Esquerdo: Mobile Menu + Status Operacional */}
+      <div className="flex items-center gap-2 sm:gap-4">
+        <button
           onClick={toggleMobileMenu}
-          className="lg:hidden p-2 rounded-lg bg-white/5 text-white/70 hover:bg-white/10 transition-colors"
+          className="lg:hidden p-2 rounded-md bg-slate-800/80 text-slate-200 hover:bg-slate-700 hover:text-white transition-colors border border-slate-700 press-effect"
+          title="Abrir menu de navegação"
         >
-          <Lucide.Menu size={20} />
+          <Lucide.Menu size={18} />
         </button>
 
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-md flex items-center justify-center" style={{ background: '#2563eb' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-              <path d="M20 7H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zm-9 8H7v-2h4v2zm6 0h-4v-2h4v2zM4 7V5a2 2 0 012-2h12a2 2 0 012 2v2H4z" />
-            </svg>
+        {/* Indicador de Status Corporativo */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="hidden sm:inline">Sistema Operacional</span>
+            <span className="sm:hidden text-[11px]">Online</span>
           </div>
-          <div>
-            <p className="text-[15px] font-bold text-white leading-tight font-display">StockPRO</p>
-            <p className="text-[9px] tracking-widest uppercase font-mono-custom" style={{ color: 'rgba(255,255,255,0.35)' }}>
-              Sistema de Estoque Corporativo
-            </p>
-          </div>
+
+          <span className="hidden xl:inline text-xs text-slate-500">|</span>
+          <span className="hidden xl:inline text-xs text-slate-300">
+            Unidade: <strong className="text-white font-medium">VPC São Paulo</strong>
+          </span>
         </div>
       </div>
-      <div className="flex items-center gap-2 md:gap-4">
-        <span className="hidden sm:block text-[11px] font-mono-custom" style={{ color: 'rgba(255,255,255,0.35)' }}>{formatDate(new Date())}</span>
-        {resumo && resumo.ativos > 0 && (
-          <div className="relative">
-            <Lucide.Bell size={16} className="text-white/50" />
-            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-600 text-white text-[9px] font-bold flex items-center justify-center">
+
+      {/* Lado Direito: Horário, Alertas e Usuário */}
+      <div className="flex items-center gap-2 sm:gap-4">
+        {/* Relógio do Sistema */}
+        <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-md bg-slate-900/80 border border-slate-700/80 text-xs text-slate-200">
+          <Lucide.Clock size={13} className="text-blue-400" />
+          <span className="font-mono-custom tabular-nums font-medium">{timeStr || '--:--:--'}</span>
+          <span className="text-[10px] text-slate-400 font-semibold">BRT</span>
+        </div>
+
+        {/* Notificações / Alertas */}
+        <a
+          href="/alertas"
+          className="relative p-2 rounded-md bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white transition-colors border border-slate-700 press-effect"
+          title="Central de alertas"
+        >
+          <Lucide.Bell size={16} />
+          {resumo && resumo.ativos > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-[10px] font-bold flex items-center justify-center animate-pulse">
               {resumo.ativos}
             </span>
-          </div>
-        )}
-        <div className="flex items-center gap-2" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>
-          {user?.matricula === '116221' && (
-            <span className="hidden md:flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 text-[9px] font-bold uppercase tracking-wider border border-blue-500/20 ring-4 ring-blue-500/5">
-              Responsável Geral
-            </span>
           )}
-          <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-medium text-white"
-            style={{ background: '#1a3460', border: '1px solid rgba(255,255,255,0.15)' }}>
-            {user?.nome?.substring(0, 2).toUpperCase()}
+        </a>
+
+        {/* Perfil do Usuário */}
+        <div className="flex items-center gap-2.5 pl-2 border-l border-slate-800">
+          <div className="w-8 h-8 rounded-md bg-blue-600/25 border border-blue-500/40 flex items-center justify-center text-blue-300 font-bold text-xs font-mono-custom">
+            {user?.nome?.substring(0, 2).toUpperCase() || 'US'}
           </div>
-          <span className="hidden lg:block">{user?.nome}</span>
-          <span className="hidden sm:block lg:hidden">{user?.nome?.split(' ')[0]}</span>
+
+          <div className="hidden md:flex flex-col text-left leading-tight">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-white">
+                {user?.nome}
+              </span>
+              {user?.matricula === '116221' && (
+                <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-blue-500/15 text-blue-300 border border-blue-500/30">
+                  Responsável
+                </span>
+              )}
+            </div>
+            <span className="text-[11px] text-slate-300 font-mono-custom">
+              Mat. <strong className="text-white font-medium">{user?.matricula}</strong>
+            </span>
+          </div>
         </div>
       </div>
     </header>
